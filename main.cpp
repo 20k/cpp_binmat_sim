@@ -7,6 +7,7 @@
 #include "../serialise/serialise.hpp"
 #include "manager.hpp"
 #include <math.h>
+#include "font_renderer.hpp"
 
 struct card : basic_entity
 {
@@ -43,6 +44,24 @@ struct card : basic_entity
         BOUNCE = 13,
         BREAK = 14,
         COUNT_VALUE = 15
+    };
+
+    std::vector<std::string> strings
+    {
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "@",
+        "*",
+        "?",
+        ">",
+        "ERROR",
     };
 
     value_t card_type = value_t::TWO;
@@ -86,6 +105,41 @@ struct card : basic_entity
     bool is_visible()
     {
         return is_face_up();
+    }
+
+    std::string get_string()
+    {
+        return strings[(int)(card_type - TWO)];
+    }
+
+
+
+    void render(sf::RenderWindow& win) override
+    {
+        vec3f face_up_col = {1,1,1};
+        vec3f face_down_col = {0.5f, 0.5f, 0.5f};
+
+        sf::RectangleShape shape;
+
+        shape.setPosition(info.pos.x(), info.pos.y());
+
+        vec2f dim = {5, 10};
+
+        shape.setSize(sf::Vector2f(dim.x(), dim.y()));
+
+        shape.setOrigin(dim.x()/2.f, dim.y()/2.f);
+
+        vec3f col = {1,1,1};
+
+        col = is_face_up() ? face_up_col : face_down_col;
+
+        col = col * 255.f;
+
+        shape.setFillColor(sf::Color(col.x(), col.y(), col.z()));
+
+        win.draw(shape);
+
+        render_font(win, get_string(), info.pos, {1,0,0,1});
     }
 
     /*bool is_hidden()
@@ -202,6 +256,8 @@ struct card_list
         }
     }
 
+
+
     card_list only_top()
     {
         card_list ncl;
@@ -266,6 +322,8 @@ struct game_state
 
         if(current_pile == piles::DEFENDER_HAND)
             return piles[3];
+
+        assert(lane >= 0 && lane < 6);
 
         if(current_pile == piles::LANE_DISCARD)
             return lanes[lane].card_piles[0];
@@ -364,16 +422,20 @@ struct game_state
 
         for(int i=0; i < piles::COUNT; i++)
         {
-            if(i == piles::LANE_DECK)
+            if(i == piles::LANE_DECK || i == piles::LANE_DISCARD || i == piles::ATTACKER_STACK || i == piles::DEFENDER_STACK)
             {
                 for(int lane = 0; lane < NUM_LANES; lane++)
                 {
-                    get_cards((piles::piles_t)i, lane) = card_list();
+                    card_list& clist = get_cards((piles::piles_t)i, lane);
+
+                    clist = card_list();
                 }
             }
             else
             {
-                get_cards((piles::piles_t)i, -1) = card_list();
+                card_list& clist = get_cards((piles::piles_t)i, -1);
+
+                clist = card_list();
             }
         }
 

@@ -215,7 +215,9 @@ struct trans
 
 struct basic_entity : serialisable
 {
+    trans info;
 
+    virtual void render(sf::RenderWindow& win){}
 };
 
 #endif // MANAGER_HPP_INCLUDED

@@ -51,6 +51,7 @@
 		</Linker>
 		<Unit filename="../serialise/serialise.cpp" />
 		<Unit filename="../serialise/serialise.hpp" />
+		<Unit filename="font_renderer.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="manager.hpp" />
 		<Extensions>
