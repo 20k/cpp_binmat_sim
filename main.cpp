@@ -9,6 +9,8 @@
 #include <math.h>
 #include "font_renderer.hpp"
 
+#define CARD_WIDTH 25
+
 struct card : basic_entity
 {
     bool face_down = false;
@@ -112,9 +114,7 @@ struct card : basic_entity
         return strings[(int)(card_type - TWO)];
     }
 
-
-
-    void render(sf::RenderWindow& win) override
+    void render_face(sf::RenderWindow& win, bool should_render_face_up)
     {
         vec3f face_up_col = {1,1,1};
         vec3f face_down_col = {0.5f, 0.5f, 0.5f};
@@ -123,7 +123,7 @@ struct card : basic_entity
 
         shape.setPosition(info.pos.x(), info.pos.y());
 
-        vec2f dim = {5, 10};
+        vec2f dim = {CARD_WIDTH, 2*CARD_WIDTH};
 
         shape.setSize(sf::Vector2f(dim.x(), dim.y()));
 
@@ -131,15 +131,33 @@ struct card : basic_entity
 
         vec3f col = {1,1,1};
 
-        col = is_face_up() ? face_up_col : face_down_col;
+        col = should_render_face_up ? face_up_col : face_down_col;
 
         col = col * 255.f;
 
         shape.setFillColor(sf::Color(col.x(), col.y(), col.z()));
 
         win.draw(shape);
+    }
+
+    void render_face_down(sf::RenderWindow& win)
+    {
+        render_face(win, false);
+    }
+
+    void render_face_up(sf::RenderWindow& win)
+    {
+        render_face(win, true);
 
         render_font(win, get_string(), info.pos, {1,0,0,1});
+    }
+
+    void render(sf::RenderWindow& win) override
+    {
+        if(is_face_up())
+            render_face_up(win);
+        else
+            render_face_down(win);
     }
 
     /*bool is_hidden()
@@ -413,11 +431,12 @@ struct game_state
         return lane >= 3;
     }
 
+    #define NUM_LANES 6
+
     void generate_new_game(card_manager& all_cards)
     {
         all_cards.reset_fetching();
 
-        #define NUM_LANES 6
         #define CARDS_IN_LANE 13
 
         for(int i=0; i < piles::COUNT; i++)
@@ -446,6 +465,56 @@ struct game_state
                 card_list& cards = get_cards(piles::LANE_DECK, lane);
 
                 cards.cards.push_back(all_cards.fetch_without_replacement());
+            }
+        }
+
+        /*for(int lane = 0; lane < NUM_LANES; lane++)
+        {
+            card_list& cards = get_cards(piles::LANE_DECK, lane);
+
+            printf("%i\n", cards.cards.size());
+        }*/
+    }
+
+    bool is_visible(card* check, piles::piles_t pile, player_t player, int lane)
+    {
+        card_list visible_cards = get_visible_pile_cards_as(pile, player, lane);
+
+        for(card* c : visible_cards.cards)
+        {
+            if(c == check)
+                return true;
+        }
+
+        return false;
+    }
+
+    void render(sf::RenderWindow& win, player_t player)
+    {
+        vec2f dim = {win.getSize().x, win.getSize().y};
+
+        vec2f centre = dim/2.f;
+
+        float card_separation = CARD_WIDTH * 1.4f;
+
+        for(int i=0; i < NUM_LANES; i++)
+        {
+            card_list current_deck = get_cards(piles::LANE_DECK, i);
+
+            float lane_x = (card_separation * i) - (card_separation * NUM_LANES/2.f) + centre.x();
+
+            for(card* c : current_deck.cards)
+            {
+                c->info.pos = {lane_x, centre.y()};
+
+                if(is_visible(c, piles::LANE_DECK, player, i))
+                {
+                    c->render_face_up(win);
+                }
+                else
+                {
+                    c->render_face_down(win);
+                }
             }
         }
     }
@@ -515,7 +584,7 @@ int main()
             }
         }
 
-
+        current_game.render(window, game_state::OVERLORD);
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 

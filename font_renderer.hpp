@@ -16,13 +16,15 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
     sf::Text txt;
     txt.setFont(font);
     txt.setString(to_render.c_str());
-    txt.setCharacterSize(24);
+    txt.setCharacterSize(16);
+
+    txt.setPosition(pos.x(), pos.y());
 
     col = col * 255;
 
     txt.setColor(sf::Color(col.x(), col.y(), col.z(), col.w()));
 
-    txt.setOrigin(txt.getLocalBounds().width/2.f, txt.getLocalBounds().height/2.f);
+    txt.setOrigin(txt.getLocalBounds().width/2.f, 0.f);
 
     win.draw(txt);
 }
