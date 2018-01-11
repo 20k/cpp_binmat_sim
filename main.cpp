@@ -114,7 +114,7 @@ struct card : basic_entity
         return strings[(int)(card_type - TWO)];
     }
 
-    void render_face(sf::RenderWindow& win, bool should_render_face_up)
+    void render_card_background(sf::RenderWindow& win, bool should_render_face_up)
     {
         vec3f face_up_col = {1,1,1};
         vec3f face_down_col = {0.5f, 0.5f, 0.5f};
@@ -123,7 +123,7 @@ struct card : basic_entity
 
         shape.setPosition(info.pos.x(), info.pos.y());
 
-        vec2f dim = {CARD_WIDTH, 2*CARD_WIDTH};
+        vec2f dim = {CARD_WIDTH, 1.7 * CARD_WIDTH};
 
         shape.setSize(sf::Vector2f(dim.x(), dim.y()));
 
@@ -142,12 +142,12 @@ struct card : basic_entity
 
     void render_face_down(sf::RenderWindow& win)
     {
-        render_face(win, false);
+        render_card_background(win, false);
     }
 
     void render_face_up(sf::RenderWindow& win)
     {
-        render_face(win, true);
+        render_card_background(win, true);
 
         render_font(win, get_string(), info.pos, {1,0,0,1});
     }
