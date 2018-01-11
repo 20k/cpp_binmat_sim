@@ -274,8 +274,6 @@ struct card_list
         }
     }
 
-
-
     card_list only_top()
     {
         card_list ncl;
@@ -286,6 +284,22 @@ struct card_list
         }
 
         return ncl;
+    }
+
+    bool take_top_card(card_list& other)
+    {
+        if(other.cards.size() == 0)
+        {
+            return false;
+        }
+
+        card* c = other.cards.back();
+
+        other.cards.pop_back();
+
+        cards.push_back(c);
+
+        return true;
     }
 };
 
@@ -482,7 +496,7 @@ struct game_state
         return false;
     }
 
-    void render_row(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
+    void render_row(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset, bool only_render_single)
     {
         card_list current_deck = get_cards(pile, cnum);
 
@@ -490,8 +504,26 @@ struct game_state
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        for(card* c : current_deck.cards)
+        if(!only_render_single)
         {
+            for(card* c : current_deck.cards)
+            {
+                c->info.pos = {lane_x, centre.y() + yoffset};
+
+                if(is_visible(c, pile, player, cnum))
+                {
+                    c->render_face_up(win);
+                }
+                else
+                {
+                    c->render_face_down(win);
+                }
+            }
+        }
+        else
+        {
+            card* c = current_deck.cards[cnum];
+
             c->info.pos = {lane_x, centre.y() + yoffset};
 
             if(is_visible(c, pile, player, cnum))
@@ -511,33 +543,128 @@ struct game_state
 
         vec2f centre = dim/2.f;
 
-
         float vertical_sep = CARD_WIDTH * 2.5f;
 
         for(int i=0; i < NUM_LANES; i++)
         {
-            render_row(piles::LANE_DECK, i, NUM_LANES, centre, player, win, 0.f);
+            render_row(piles::LANE_DECK, i, NUM_LANES, centre, player, win, 0.f, false);
 
-            render_row(piles::LANE_DISCARD, i, NUM_LANES, centre, player, win, vertical_sep);
+            render_row(piles::LANE_DISCARD, i, NUM_LANES, centre, player, win, vertical_sep, false);
 
-            render_row(piles::DEFENDER_STACK, i, NUM_LANES, centre, player, win, -vertical_sep);
+            render_row(piles::DEFENDER_STACK, i, NUM_LANES, centre, player, win, -vertical_sep, false);
 
-            render_row(piles::ATTACKER_STACK, i, NUM_LANES, centre, player, win, -2*vertical_sep);
+            render_row(piles::ATTACKER_STACK, i, NUM_LANES, centre, player, win, -2*vertical_sep, false);
         }
 
         card_list defender_hand = get_cards(piles::DEFENDER_HAND, -1);
 
         for(int i=0; i < defender_hand.cards.size(); i++)
         {
-            render_row(piles::DEFENDER_HAND, i, defender_hand.cards.size(), centre, player, win, vertical_sep * 4);
+            render_row(piles::DEFENDER_HAND, i, defender_hand.cards.size(), centre, player, win, vertical_sep * 4, true);
         }
 
-        card_list attacker_hand = get_cards(piles::DEFENDER_HAND, -1);
+        card_list attacker_hand = get_cards(piles::ATTACKER_HAND, -1);
 
         for(int i=0; i < attacker_hand.cards.size(); i++)
         {
-            render_row(piles::DEFENDER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
+            render_row(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5, true);
         }
+    }
+
+    card_list& get_hand(player_t player)
+    {
+        if(player == ATTACKER)
+        {
+            return get_cards(piles::ATTACKER_HAND, -1);
+        }
+
+        if(player == DEFENDER)
+        {
+            return get_cards(piles::DEFENDER_HAND, -1);
+        }
+
+        printf("bad player in get hand\n");
+
+        assert(false);
+    }
+
+    bool transfer_top_card(piles::piles_t to_pile, int to_lane, piles::piles_t from_pile, int from_lane)
+    {
+        card_list& to_cards = get_cards(to_pile, to_lane);
+        card_list& from_cards = get_cards(from_pile, from_lane);
+
+        return to_cards.take_top_card(from_cards);
+    }
+
+    bool lane_protected(int lane)
+    {
+        card_list& defender_cards = get_cards(piles::DEFENDER_STACK, lane);
+
+        return defender_cards.cards.size() > 0;
+    }
+
+    bool draw_from(piles::piles_t pile, int lane, player_t player)
+    {
+        if(player != ATTACKER && player != DEFENDER)
+            return false;
+
+        card_list& hand = get_hand(player);
+
+        if(player == ATTACKER)
+        {
+            if(pile == piles::ATTACKER_DECK)
+            {
+                bool success = transfer_top_card(piles::ATTACKER_HAND, -1, piles::ATTACKER_DECK, -1);
+
+                if(!success)
+                {
+                    ///shuffle in attacker discard pile into attacker deck
+                    ///l8r
+
+                    printf("no cards in attacker deck\n");
+
+                    return false;
+                }
+
+                return true;
+            }
+
+            if(pile == piles::LANE_DECK)
+            {
+                if(lane_protected(lane))
+                    return false;
+
+                bool success = transfer_top_card(piles::ATTACKER_HAND, -1, piles::LANE_DECK, lane);
+
+                if(!success)
+                {
+                    printf("no cards in lane deck\n");
+
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        if(player == DEFENDER)
+        {
+            if(player == piles::LANE_DECK)
+            {
+                bool success = transfer_top_card(piles::DEFENDER_HAND, -1, piles::LANE_DECK, lane);
+
+                if(!success)
+                {
+                    printf("no cards in lane deck\n");
+
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        return false;
     }
 };
 
@@ -584,12 +711,12 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Attacker Draw from Lane Deck"))
     {
-
+        current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::ATTACKER);
     }
 
     if(ImGui::Button("Attacker Draw From Attacker Deck"))
     {
-
+        current_game.draw_from(piles::ATTACKER_DECK, -1, game_state::ATTACKER);
     }
 
     if(ImGui::Button("Attacker Play to Stack"))
@@ -606,7 +733,7 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Defender Draw From Lane Deck"))
     {
-
+        current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::DEFENDER);
     }
 
     if(ImGui::Button("Defender Play to Stack"))
