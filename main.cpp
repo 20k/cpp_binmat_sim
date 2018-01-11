@@ -189,6 +189,18 @@ struct card_list
             }
         }
     }
+
+    card_list only_top()
+    {
+        card_list ncl;
+
+        if(cards.size() > 0)
+        {
+            ncl.cards.push_back(cards.back());
+        }
+
+        return ncl;
+    }
 };
 
 namespace piles
@@ -196,6 +208,7 @@ namespace piles
     enum piles_t
     {
         LANE_DISCARD,
+        LANE_DECK,
         DEFENDER_STACK,
         ATTACKER_STACK,
 
@@ -208,8 +221,8 @@ namespace piles
 
 struct lane
 {
-    ///lane discard, defender stack, attacker stack
-    std::array<card_list, 3> card_piles;
+    ///lane discard, lane deck, defender stack, attacker stack
+    std::array<card_list, 4> card_piles;
 };
 
 struct game_state
@@ -258,11 +271,14 @@ struct game_state
         if(current_pile == piles::LANE_DISCARD)
             return lanes[lane].card_piles[0];
 
-        if(current_pile == piles::DEFENDER_STACK)
+        if(current_pile == piles::LANE_DECK)
             return lanes[lane].card_piles[1];
 
-        if(current_pile == piles::ATTACKER_STACK)
+        if(current_pile == piles::DEFENDER_STACK)
             return lanes[lane].card_piles[2];
+
+        if(current_pile == piles::ATTACKER_STACK)
+            return lanes[lane].card_piles[3];
     }
 
     card_list get_visible_pile_cards_as(piles::piles_t current_pile, player_t player, int lane = -1)
@@ -289,6 +305,16 @@ struct game_state
             return get_cards(current_pile, -1);
         }
 
+        if(current_pile == LANE_DECK)
+        {
+            card_list cards = get_cards(current_pile, lane);
+
+            if(!lane_has_faceup_top_card(lane))
+                return card_list();
+
+            if(lane_has_faceup_top_card(lane))
+                return cards.only_top();
+        }
 
         if(current_pile == LANE_DISCARD)
         {
