@@ -1,11 +1,6 @@
 #ifndef MANAGER_HPP_INCLUDED
 #define MANAGER_HPP_INCLUDED
 
-struct asteroid;
-struct player_ship;
-struct ship;
-struct torpedo;
-
 template<typename T>
 struct manager : serialisable
 {
