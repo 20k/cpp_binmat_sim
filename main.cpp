@@ -505,8 +505,6 @@ struct game_state
         }
     }
 
-
-
     void render(sf::RenderWindow& win, player_t player)
     {
         vec2f dim = {win.getSize().x, win.getSize().y};
@@ -553,6 +551,75 @@ void tests()
     assert(do_wild_roundup(9) == 16);
     assert(do_wild_roundup(16) == 32);
     assert(do_wild_roundup(17) == 32);
+}
+
+void do_ui(game_state& current_game)
+{
+    ImGui::Begin("Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ///ATTACKER ACTIONS:
+    ///Draw card from lane deck if not protected
+    ///Draw card from attacker deck
+    ///Play a card to one of 6 attacker stacks
+    ///Initiate combat in one of 6 attacker stacks
+
+
+    ///DEFENDER ACTIONS:
+    ///Draw card from lane deck
+    ///Play a card to one of 6 defender stacks
+    ///Place card in the discard pile of a lane from your hand
+
+    ///MISC ACTIONS:
+    ///Inspect lane discard piles
+    ///Inspect attacker discard pile
+    ///Inspect any attacker stacks
+    ///Inspect any face up defender stack
+    ///Inspect own hand
+
+    static int lane_selected = 0;
+
+    ImGui::InputInt("Lane", &lane_selected);;
+
+    lane_selected = clamp(lane_selected, 0, 6);
+
+    if(ImGui::Button("Attacker Draw from Lane Deck"))
+    {
+
+    }
+
+    if(ImGui::Button("Attacker Draw From Attacker Deck"))
+    {
+
+    }
+
+    if(ImGui::Button("Attacker Play to Stack"))
+    {
+
+    }
+
+    if(ImGui::Button("Attacker Initiate Combat At Lane"))
+    {
+
+    }
+
+    ImGui::NewLine();
+
+    if(ImGui::Button("Defender Draw From Lane Deck"))
+    {
+
+    }
+
+    if(ImGui::Button("Defender Play to Stack"))
+    {
+
+    }
+
+    if(ImGui::Button("Discard Card to Lane Discard Pile"))
+    {
+
+    }
+
+    ImGui::End();
 }
 
 int main()
@@ -606,6 +673,8 @@ int main()
                 window.create(sf::VideoMode(x, y), "Wowee", sf::Style::Default, settings);
             }
         }
+
+        do_ui(current_game);
 
         current_game.render(window, game_state::OVERLORD);
 
