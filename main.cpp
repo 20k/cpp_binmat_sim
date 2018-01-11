@@ -253,20 +253,6 @@ struct game_state
         OVERLORD, ///can see everything
     };
 
-    /*bool can_inspect_pile_as(piles_t pile, player_t player)
-    {
-        if(pile == ATTACKER_DECK)
-            return false;
-
-        if(player == ATTACKER && (pile == ATTACKER_DISCARD || pile == ATTACKER_HAND))
-            return true;
-
-        if(player == DEFENDER && (pile == DEFENDER_HAND))
-            return true;
-
-        return false;
-    }*/
-
     card_list& get_cards(piles::piles_t current_pile, int lane = -1)
     {
         if(current_pile == piles::ATTACKER_DECK)
@@ -444,6 +430,9 @@ int main()
     card_manager all_cards;
     all_cards.generate_cards();
 
+    game_state current_game;
+    current_game.generate_new_game(all_cards);
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -463,6 +452,8 @@ int main()
                 window.create(sf::VideoMode(x, y), "Wowee", sf::Style::Default, settings);
             }
         }
+
+
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
