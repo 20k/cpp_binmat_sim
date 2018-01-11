@@ -11,6 +11,7 @@
 struct card : basic_entity
 {
     bool face_down = false;
+    bool hidden = false;
 
     enum suit_t
     {
@@ -76,6 +77,21 @@ struct card : basic_entity
 
         return (int)card_type;
     }
+
+    bool is_face_up()
+    {
+        return !face_down;
+    }
+
+    bool is_visible()
+    {
+        return is_face_up();
+    }
+
+    /*bool is_hidden()
+    {
+        return !face_up && hidden;
+    }*/
 };
 
 struct card_manager : manager<card>
@@ -121,7 +137,12 @@ int do_wild_roundup(int sum)
 
 struct card_list
 {
+    ///left is bottom, right is top
     std::vector<card*> cards;
+
+    bool can_be_drawn_from = false;
+    bool hidden_to_opposition_if_face_down = true;
+    bool hidden_to_opposition_if_face_up = true;
 
     int calculate_stack_damage()
     {
@@ -155,21 +176,159 @@ struct card_list
 
         return sum;
     }
+
+    void prune_to_face_up()
+    {
+        for(int i=0; i < cards.size(); i++)
+        {
+            if(!cards[i]->is_face_up())
+            {
+                cards.erase(cards.begin() + i);
+                i--;
+                continue;
+            }
+        }
+    }
 };
+
+namespace piles
+{
+    enum piles_t
+    {
+        LANE_DISCARD,
+        DEFENDER_STACK,
+        ATTACKER_STACK,
+
+        ATTACKER_DECK,
+        ATTACKER_DISCARD,
+        ATTACKER_HAND,
+        DEFENDER_HAND,
+    };
+}
 
 struct lane
 {
-    card_list lane_discard;
-    card_list defender_stack;
-    card_list attacker_stack;
+    ///lane discard, defender stack, attacker stack
+    std::array<card_list, 3> card_piles;
 };
 
-struct board
+struct game_state
 {
-    std::array<card_list, 6> lanes;
+    std::array<lane, 6> lanes;
 
-    card_list attacker_deck;
-    card_list attacker_discard;
+    ///Attacker deck, attacker discard, attacker hand, defender hand
+    std::array<card_list, 4> piles;
+
+    enum player_t
+    {
+        ATTACKER,
+        DEFENDER,
+        SPECTATOR,
+        OVERLORD, ///can see everything
+    };
+
+    /*bool can_inspect_pile_as(piles_t pile, player_t player)
+    {
+        if(pile == ATTACKER_DECK)
+            return false;
+
+        if(player == ATTACKER && (pile == ATTACKER_DISCARD || pile == ATTACKER_HAND))
+            return true;
+
+        if(player == DEFENDER && (pile == DEFENDER_HAND))
+            return true;
+
+        return false;
+    }*/
+
+    card_list& get_cards(piles::piles_t current_pile, int lane = -1)
+    {
+        if(current_pile == piles::ATTACKER_DECK)
+            return piles[0];
+
+        if(current_pile == piles::ATTACKER_DISCARD)
+            return piles[1];
+
+        if(current_pile == piles::ATTACKER_HAND)
+            return piles[2];
+
+        if(current_pile == piles::DEFENDER_HAND)
+            return piles[3];
+
+        if(current_pile == piles::LANE_DISCARD)
+            return lanes[lane].card_piles[0];
+
+        if(current_pile == piles::DEFENDER_STACK)
+            return lanes[lane].card_piles[1];
+
+        if(current_pile == piles::ATTACKER_STACK)
+            return lanes[lane].card_piles[2];
+    }
+
+    card_list get_visible_pile_cards_as(piles::piles_t current_pile, player_t player, int lane = -1)
+    {
+        using namespace piles;
+
+        if(current_pile == ATTACKER_DECK)
+        {
+            return card_list();
+        }
+
+        if(current_pile == ATTACKER_DISCARD)
+        {
+            return get_cards(current_pile, -1);
+        }
+
+        if(current_pile == ATTACKER_HAND && player != DEFENDER)
+        {
+            return get_cards(current_pile, -1);
+        }
+
+        if(current_pile == DEFENDER_HAND && player != ATTACKER)
+        {
+            return get_cards(current_pile, -1);
+        }
+
+
+        if(current_pile == LANE_DISCARD)
+        {
+            return get_cards(current_pile, lane);
+        }
+
+        if(current_pile == DEFENDER_STACK)
+        {
+            ///important that this is a copy
+            card_list cards = get_cards(current_pile, lane);
+
+            if(player != ATTACKER)
+                return cards;
+
+            if(player != DEFENDER)
+            {
+                cards.prune_to_face_up();
+                return cards;
+            }
+        }
+
+        if(current_pile == ATTACKER_STACK)
+        {
+            card_list cards = get_cards(current_pile, lane);
+
+            if(player != DEFENDER)
+                return cards;
+
+            if(player != ATTACKER)
+            {
+                cards.prune_to_face_up();
+                return cards;
+            }
+        }
+    }
+
+    bool lane_has_faceup_top_card(int lane)
+    {
+        return lane >= 3;
+    }
 };
 
 void tests()
@@ -181,6 +340,7 @@ void tests()
     assert(do_wild_roundup(8) == 16);
     assert(do_wild_roundup(9) == 16);
     assert(do_wild_roundup(16) == 32);
+    assert(do_wild_roundup(17) == 32);
 }
 
 int main()
