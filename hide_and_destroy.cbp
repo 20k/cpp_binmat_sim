@@ -31,6 +31,8 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add option="-std=c++17" />
+			<Add option="-DNET_CLIENT" />
 		</Compiler>
 		<Linker>
 			<Add option="-lmingw32" />
@@ -47,7 +49,10 @@
 			<Add option="-lopenal32" />
 			<Add option="-logg" />
 		</Linker>
+		<Unit filename="../serialise/serialise.cpp" />
+		<Unit filename="../serialise/serialise.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="manager.hpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

@@ -108,6 +108,18 @@ struct card_manager : manager<card>
             }
         }
     }
+
+    int card_fetch_counter = 0;
+
+    card* fetch_without_replacement()
+    {
+        return elems[card_fetch_counter++];
+    }
+
+    void reset_fetching()
+    {
+        card_fetch_counter = 0;
+    }
 };
 
 bool is_power_of_2(int x)
@@ -216,6 +228,7 @@ namespace piles
         ATTACKER_DISCARD,
         ATTACKER_HAND,
         DEFENDER_HAND,
+        COUNT,
     };
 }
 
@@ -355,6 +368,39 @@ struct game_state
     {
         return lane >= 3;
     }
+
+    void generate_new_game(card_manager& all_cards)
+    {
+        all_cards.reset_fetching();
+
+        #define NUM_LANES 6
+        #define CARDS_IN_LANE 13
+
+        for(int i=0; i < piles::COUNT; i++)
+        {
+            if(i == piles::LANE_DECK)
+            {
+                for(int lane = 0; lane < NUM_LANES; lane++)
+                {
+                    get_cards((piles::piles_t)i, lane) = card_list();
+                }
+            }
+            else
+            {
+                get_cards((piles::piles_t)i, -1) = card_list();
+            }
+        }
+
+        for(int lane=0; lane < NUM_LANES; lane++)
+        {
+            for(int card = 0; card < CARDS_IN_LANE; card++)
+            {
+                card_list& cards = get_cards(piles::LANE_DECK, lane);
+
+                cards.cards.push_back(all_cards.fetch_without_replacement());
+            }
+        }
+    }
 };
 
 void tests()
@@ -394,6 +440,9 @@ int main()
     sf::Clock ui_clock;
 
     sf::Clock time;
+
+    card_manager all_cards;
+    all_cards.generate_cards();
 
     while(window.isOpen())
     {
