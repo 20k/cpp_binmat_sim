@@ -27,7 +27,6 @@ std::string tooltip::current;
 struct card : basic_entity
 {
     bool face_down = false;
-    bool hidden = false;
 
     enum suit_t
     {
@@ -95,10 +94,10 @@ struct card : basic_entity
         return card_type >= TRAP;
     }
 
-    bool is_normal()
+    /*bool is_normal()
     {
         return !is_modifier();
-    }
+    }*/
 
     bool is_type(value_t val)
     {
@@ -254,10 +253,6 @@ struct card_list
 {
     ///left is bottom, right is top
     std::vector<card*> cards;
-
-    bool can_be_drawn_from = false;
-    bool hidden_to_opposition_if_face_down = true;
-    bool hidden_to_opposition_if_face_up = true;
 
     bool face_up = false;
 
@@ -905,21 +900,10 @@ struct game_state
         ensure_facedown_cards();
     }
 
-    struct ensure_card_facing_on_exit
-    {
-        game_state& state;
-
-        ensure_card_facing_on_exit(game_state& st) : state(st){}
-
-        ~ensure_card_facing_on_exit(){state.ensure_card_facing();};
-    };
-
-    bool draw_from(piles::piles_t pile, int lane, player_t player)
+    bool draw_from_impl(piles::piles_t pile, int lane, player_t player)
     {
         if(player != ATTACKER && player != DEFENDER)
             return false;
-
-        ensure_card_facing_on_exit card_facing(*this);
 
         card_list& hand = get_hand(player);
 
@@ -1020,6 +1004,15 @@ struct game_state
         }
 
         return false;
+    }
+
+    bool draw_from(piles::piles_t pile, int lane, player_t player)
+    {
+        bool result = draw_from_impl(pile, lane, player);
+
+        ensure_card_facing();
+
+        return result;
     }
 
     bool can_play_face_up_on(player_t player, card* to_play, card_list& appropriate_stack)
@@ -1157,6 +1150,7 @@ struct game_state
         }
 
         printf("post damage\n");
+
 
         ///if there's more than 1 break game is broken
         ///if there's 1 break on the attacker then modify combat rules
