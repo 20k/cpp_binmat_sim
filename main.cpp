@@ -877,12 +877,15 @@ struct game_state
         return true;
     }
 
-    void trigger_combat()
+    void trigger_combat(player_t who_triggered, int lane)
     {
         printf("combat\n");
+
+
+
     }
 
-    bool play_card_on_stack(player_t player, card* to_play, card_list& appropriate_stack, bool face_up)
+    bool play_card_on_stack(player_t player, card* to_play, card_list& appropriate_stack, bool face_up, int lane)
     {
         std::cout << "fup " << face_up << std::endl;
 
@@ -897,7 +900,7 @@ struct game_state
             ///went from face down to face up
             if(is_face_down)
             {
-                trigger_combat();
+                trigger_combat(player, lane);
             }
 
             return true;
@@ -931,7 +934,7 @@ struct game_state
 
         card_list& appropriate_stack = get_lane_stack_for_player(player, lane);
 
-        bool success = play_card_on_stack(player, to_play, appropriate_stack, face_up);
+        bool success = play_card_on_stack(player, to_play, appropriate_stack, face_up, lane);
 
         if(!success)
         {
@@ -951,6 +954,19 @@ struct game_state
     void set_viewer_state(player_t player)
     {
         viewer = player;
+    }
+
+    bool try_trigger_combat(player_t player, int lane)
+    {
+        card_list& cards = get_lane_stack_for_player(player, lane);
+
+        ///no
+        if(cards.cards.size() == 0)
+            return false;
+
+        trigger_combat(player, lane);
+
+        return true;
     }
 };
 
