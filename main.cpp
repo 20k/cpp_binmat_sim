@@ -254,6 +254,21 @@ struct card_list
         return is_face_down() || cards.size() == 0;
     }
 
+    card_list get_of_type(card::value_t type)
+    {
+        card_list ret;
+
+        for(card* c : cards)
+        {
+            if(c->is_type(type))
+            {
+                ret.cards.push_back(c);
+            }
+        }
+
+        return ret;
+    }
+
     bool add_face_down_card(card* c)
     {
         if(cards.size() == 0)
@@ -332,11 +347,11 @@ struct card_list
         return ncl;
     }
 
-    bool take_top_card(card_list& other)
+    std::optional<card*> take_top_card(card_list& other)
     {
         if(other.cards.size() == 0)
         {
-            return false;
+            return std::nullopt;
         }
 
         card* c = other.cards.back();
@@ -345,7 +360,7 @@ struct card_list
 
         cards.push_back(c);
 
-        return true;
+        return c;
     }
 
     bool shuffle_in(card_list& other)
@@ -385,6 +400,36 @@ struct card_list
         }
 
         return false;
+    }
+
+    void steal_all(card_list& other)
+    {
+        for(card* c : other.cards)
+        {
+            cards.push_back(c);
+        }
+
+        other.cards.clear();
+    }
+
+    void steal_all_of(card_list& other, card::value_t type)
+    {
+        /*for(card* c : other.cards)
+        {
+            cards.push_back(c);
+        }*/
+
+        for(int i=0; i < other.cards.size(); i++)
+        {
+            if(other.cards[i]->is_type(type))
+            {
+                cards.push_back(other.cards[i]);
+
+                other.cards.erase(other.cards.begin() + i);
+                i--;
+                continue;
+            }
+        }
     }
 };
 
@@ -744,7 +789,7 @@ struct game_state
         card_list& to_cards = get_cards(to_pile, to_lane);
         card_list& from_cards = get_cards(from_pile, from_lane);
 
-        return to_cards.take_top_card(from_cards);
+        return to_cards.take_top_card(from_cards) != std::nullopt;
     }
 
     bool lane_protected(int lane)
@@ -877,12 +922,148 @@ struct game_state
         return true;
     }
 
+    std::vector<card*> process_trap_cards(card_list& my_stack, card_list& other_stack, card_list& discard)
+    {
+        std::vector<card*> discarded;
+
+        card_list traps = my_stack.get_of_type(card::TRAP);
+
+        for(card* c : traps.cards)
+        {
+            if(c->face_down)
+            {
+                c->face_down = false;
+
+                std::optional<card*> taken = discard.take_top_card(other_stack);
+
+                if(taken)
+                {
+                    (*taken)->face_down = true;
+
+                    discarded.push_back(*taken);
+                }
+            }
+        }
+
+        return discarded;
+    }
+
     void trigger_combat(player_t who_triggered, int lane)
     {
         printf("combat\n");
 
+        card_list& attacker_stack = get_cards(piles::ATTACKER_STACK, lane);
+        card_list& defender_stack = get_cards(piles::DEFENDER_STACK, lane);
 
+        card_list& attacker_discard = get_cards(piles::ATTACKER_DISCARD, -1);
+        card_list& lane_discard = get_cards(piles::LANE_DISCARD, lane);
 
+        card_list& lane_deck = get_cards(piles::LANE_DECK, lane);
+
+        card_list& attacker_hand = get_cards(piles::ATTACKER_HAND, -1);
+
+        std::vector<card*> went_to_lane_discard_from_traps;
+        std::vector<card*> went_to_attacker_discard_from_traps;
+
+        if(who_triggered == ATTACKER)
+        {
+            ///attacker then defender
+            went_to_attacker_discard_from_traps = process_trap_cards(attacker_stack, defender_stack, attacker_discard);
+            went_to_lane_discard_from_traps = process_trap_cards(defender_stack, attacker_stack, lane_discard);
+        }
+
+        if(who_triggered == DEFENDER)
+        {
+            ///defender then attacker
+            went_to_lane_discard_from_traps = process_trap_cards(defender_stack, attacker_stack, lane_discard);
+            went_to_attacker_discard_from_traps = process_trap_cards(attacker_stack, defender_stack, attacker_discard);
+        }
+
+        bool should_bounce = false;
+
+        card_list attacker_bounce = attacker_stack.get_of_type(card::BOUNCE);
+        card_list defender_bounce = defender_stack.get_of_type(card::BOUNCE);
+
+        if(attacker_bounce.cards.size() > 0 || defender_bounce.cards.size() > 0)
+            should_bounce = true;
+
+        for(card* c : attacker_stack.cards)
+        {
+            c->face_down = false;
+        }
+
+        for(card* c : defender_stack.cards)
+        {
+            c->face_down = false;
+        }
+
+        ///bounce cards go vroom vroom vroom now
+        attacker_discard.steal_all_of(defender_stack, card::BOUNCE);
+        lane_discard.steal_all_of(attacker_stack, card::BOUNCE);
+
+        int attacker_damage = attacker_discard.calculate_stack_damage();
+        int defender_damage = attacker_discard.calculate_stack_damage();
+
+        if(attacker_damage == 0 && defender_damage == 0)
+        {
+            should_bounce = true;
+        }
+
+        if(should_bounce)
+        {
+            attacker_discard.steal_all(attacker_stack);
+
+            return;
+        }
+
+        ///if my damage < than defender damage, send to lane discard
+        if(attacker_damage < defender_damage)
+        {
+            lane_discard.steal_all(attacker_stack);
+            return;
+        }
+
+        ///if there's more than 1 break game is broken
+        ///if there's 1 break on the attacker then modify combat rules
+        bool modify_combat_rules = attacker_stack.get_of_type(card::BREAK).cards.size() > 0;
+
+        int damage = (attacker_damage - defender_damage) + 1;
+
+        if(modify_combat_rules)
+        {
+            damage = attacker_damage;
+        }
+
+        std::vector<card*> stolen;
+        std::vector<card*> destroyed;
+
+        for(int cur_d = damage; cur_d > 0; cur_d--)
+        {
+            bool cards_left = defender_stack.cards.size() > 0;
+
+            if(cards_left)
+            {
+                auto was_destroyed = attacker_discard.take_top_card(defender_stack);
+                destroyed.push_back(*was_destroyed);
+
+                continue;
+            }
+
+            bool lane_cards_exist = lane_deck.cards.size() > 0;
+
+            if(lane_cards_exist)
+            {
+                auto was_stolen = attacker_hand.take_top_card(lane_deck);
+                stolen.push_back(*was_stolen);
+
+                continue;
+            }
+
+            printf("attacker wins\n");
+        }
+
+        ///remember, when going faceup both players would see the contents of the cards
+        ///AKA gameplay should pause or something and allow the players to view the contents of those cards
     }
 
     bool play_card_on_stack(player_t player, card* to_play, card_list& appropriate_stack, bool face_up, int lane)
