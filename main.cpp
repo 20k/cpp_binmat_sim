@@ -748,6 +748,19 @@ struct game_state
         {
             render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
+
+        card_list attacker_deck = get_cards(piles::ATTACKER_DECK, -1);
+        card_list attacker_discard = get_cards(piles::ATTACKER_DISCARD, -1);
+
+        if(attacker_deck.cards.size() > 0)
+        {
+            render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5, centre.y()}, player, win, -vertical_sep * 4);
+        }
+
+        if(attacker_discard.cards.size() > 0)
+        {
+            render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
+        }
     }
 
     card_list& get_hand(player_t player)
@@ -1001,13 +1014,15 @@ struct game_state
         attacker_discard.steal_all_of(defender_stack, card::BOUNCE);
         lane_discard.steal_all_of(attacker_stack, card::BOUNCE);
 
-        int attacker_damage = attacker_discard.calculate_stack_damage();
-        int defender_damage = attacker_discard.calculate_stack_damage();
+        int attacker_damage = attacker_stack.calculate_stack_damage();
+        int defender_damage = defender_stack.calculate_stack_damage();
 
         if(attacker_damage == 0 && defender_damage == 0)
         {
             should_bounce = true;
         }
+
+        printf("%i %i\n", attacker_damage, defender_damage);
 
         if(should_bounce)
         {
@@ -1016,12 +1031,16 @@ struct game_state
             return;
         }
 
+        printf("%i %i\n", attacker_damage, defender_damage);
+
         ///if my damage < than defender damage, send to lane discard
         if(attacker_damage < defender_damage)
         {
             lane_discard.steal_all(attacker_stack);
             return;
         }
+
+        printf("post damage\n");
 
         ///if there's more than 1 break game is broken
         ///if there's 1 break on the attacker then modify combat rules
@@ -1034,6 +1053,8 @@ struct game_state
             damage = attacker_damage;
         }
 
+        printf("found damage %i\n", damage);
+
         std::vector<card*> stolen;
         std::vector<card*> destroyed;
 
@@ -1045,6 +1066,8 @@ struct game_state
             {
                 auto was_destroyed = attacker_discard.take_top_card(defender_stack);
                 destroyed.push_back(*was_destroyed);
+
+                printf("doing fun\n");
 
                 continue;
             }
@@ -1061,6 +1084,8 @@ struct game_state
 
             printf("attacker wins\n");
         }
+
+        attacker_discard.steal_all(attacker_stack);
 
         ///remember, when going faceup both players would see the contents of the cards
         ///AKA gameplay should pause or something and allow the players to view the contents of those cards
@@ -1216,7 +1241,7 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Attacker Initiate Combat At Lane"))
     {
-
+        current_game.try_trigger_combat(game_state::ATTACKER, lane_selected);
     }
 
     ImGui::NewLine();
