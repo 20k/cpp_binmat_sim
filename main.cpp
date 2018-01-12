@@ -254,6 +254,14 @@ struct card_list
         return is_face_down() || cards.size() == 0;
     }
 
+    void make_cards_face_down()
+    {
+        for(card* c : cards)
+        {
+            c->face_down = true;
+        }
+    }
+
     card_list get_of_type(card::value_t type)
     {
         card_list ret;
@@ -812,6 +820,30 @@ struct game_state
         return defender_cards.cards.size() > 0;
     }
 
+    void ensure_faceup_lanes()
+    {
+        for(int i=0; i < 6; i++)
+        {
+            if(lane_has_faceup_top_card(i))
+            {
+                card_list& cards = get_cards(piles::LANE_DECK, i);
+
+                if(cards.cards.size() > 0)
+                {
+                    cards.cards.back()->face_down = false;
+                }
+            }
+        }
+    }
+
+    void ensure_facedown_cards()
+    {
+        get_cards(piles::ATTACKER_HAND, -1).make_cards_face_down();
+        get_cards(piles::DEFENDER_HAND, -1).make_cards_face_down();
+
+        get_cards(piles::ATTACKER_DECK, -1).make_cards_face_down();
+    }
+
     bool draw_from(piles::piles_t pile, int lane, player_t player)
     {
         if(player != ATTACKER && player != DEFENDER)
@@ -829,11 +861,17 @@ struct game_state
                 {
                     success = get_cards(piles::ATTACKER_HAND, -1).shuffle_in(get_cards(piles::ATTACKER_DISCARD));
 
+                    get_cards(piles::ATTACKER_HAND, -1).make_cards_face_down();
+
                     printf("no cards in attacker deck\n");
 
                     if(success)
                     {
                         printf("shuffled in discard\n");
+
+                        transfer_top_card(piles::ATTACKER_HAND, -1, piles::ATTACKER_DECK, -1);
+
+                        ensure_facedown_cards();
                     }
                     else
                     {
@@ -842,6 +880,8 @@ struct game_state
 
                     return success;
                 }
+
+                ensure_facedown_cards();
 
                 return true;
             }
@@ -853,14 +893,24 @@ struct game_state
 
                 bool success = transfer_top_card(piles::ATTACKER_HAND, -1, piles::LANE_DECK, lane);
 
+                ensure_facedown_cards();
+
                 if(!success)
                 {
                     printf("no cards in lane deck\n");
 
                     success = get_cards(piles::LANE_DECK, lane).shuffle_in(get_cards(piles::LANE_DISCARD, lane));
 
+                    get_cards(piles::LANE_DECK, lane).make_cards_face_down();
+
+                    ensure_faceup_lanes();
+
                     if(success)
                     {
+                        transfer_top_card(piles::ATTACKER_HAND, -1, piles::LANE_DECK, lane);
+
+                        ensure_facedown_cards();
+
                         printf("shuffled in lane discard\n");
                     }
                     else
@@ -868,8 +918,12 @@ struct game_state
                         printf("attacker wins\n");
                     }
 
+                    ensure_faceup_lanes();
+
                     return success;
                 }
+
+                ensure_faceup_lanes();
 
                 return true;
             }
@@ -881,14 +935,24 @@ struct game_state
             {
                 bool success = transfer_top_card(piles::DEFENDER_HAND, -1, piles::LANE_DECK, lane);
 
+                ensure_facedown_cards();
+
                 if(!success)
                 {
                     printf("no cards in lane deck\n");
 
                     success = get_cards(piles::LANE_DECK, lane).shuffle_in(get_cards(piles::LANE_DISCARD, lane));
 
+                    get_cards(piles::LANE_DECK, lane).make_cards_face_down();
+
+                    ensure_faceup_lanes();
+
                     if(success)
                     {
+                        transfer_top_card(piles::DEFENDER_HAND, -1, piles::LANE_DECK, lane);
+
+                        ensure_facedown_cards();
+
                         printf("shuffled in lane discard\n");
                     }
                     else
@@ -896,8 +960,12 @@ struct game_state
                         printf("attacker wins\n");
                     }
 
+                    ensure_faceup_lanes();
+
                     return success;
                 }
+
+                ensure_faceup_lanes();
 
                 return true;
             }
@@ -1174,6 +1242,24 @@ struct game_state
 
         return true;
     }
+
+    bool discard_hand_to_lane_discard(int lane, int card_offset)
+    {
+        card_list& lane_discard = get_cards(piles::LANE_DISCARD, lane);
+
+        card_list& hand = get_cards(piles::DEFENDER_HAND, lane);
+
+        if(card_offset < 0 || card_offset >= hand.cards.size())
+            return false;
+
+        card* c = hand.cards[card_offset];
+
+        assert(hand.remove_card(c));
+
+        c->face_down = false;
+
+        lane_discard.cards.push_back(c);
+    }
 };
 
 void tests()
@@ -1258,7 +1344,7 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Discard Card to Lane Discard Pile"))
     {
-
+        current_game.discard_hand_to_lane_discard(lane_selected, hand_card_offset);
     }
 
     ImGui::End();
