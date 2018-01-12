@@ -1271,7 +1271,7 @@ void tests()
 
 void do_ui(game_state& current_game)
 {
-    ImGui::Begin("Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
     ///ATTACKER ACTIONS:
     ///Draw card from lane deck if not protected
@@ -1305,34 +1305,40 @@ void do_ui(game_state& current_game)
 
     lane_selected = clamp(lane_selected, 0, 6);
 
-    if(ImGui::Button("Attacker Draw from Lane Deck"))
+    ImGui::End();
+
+    ImGui::Begin("Attacker Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    if(ImGui::Button("Draw from Lane Deck"))
     {
         current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::ATTACKER);
     }
 
-    if(ImGui::Button("Attacker Draw From Attacker Deck"))
+    if(ImGui::Button("Draw From Attacker Deck"))
     {
         current_game.draw_from(piles::ATTACKER_DECK, -1, game_state::ATTACKER);
     }
 
-    if(ImGui::Button("Attacker Play to Stack"))
+    if(ImGui::Button("Play to Stack"))
     {
         current_game.play_to_stack_from_hand(game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
     }
 
-    if(ImGui::Button("Attacker Initiate Combat At Lane"))
+    if(ImGui::Button("Initiate Combat At Lane"))
     {
         current_game.try_trigger_combat(game_state::ATTACKER, lane_selected);
     }
 
-    ImGui::NewLine();
+    ImGui::End();
 
-    if(ImGui::Button("Defender Draw From Lane Deck"))
+    ImGui::Begin("Defender Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    if(ImGui::Button("Draw From Lane Deck"))
     {
         current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::DEFENDER);
     }
 
-    if(ImGui::Button("Defender Play to Stack"))
+    if(ImGui::Button("Play to Stack"))
     {
         current_game.play_to_stack_from_hand(game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
     }
