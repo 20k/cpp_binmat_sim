@@ -2,7 +2,7 @@
 #define FONT_RENDERER_HPP_INCLUDED
 #include <SFML/Graphics/Text.hpp>
 
-void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos, vec4f col)
+void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos, vec4f col, float scale = 1)
 {
     static sf::Font font;
     static bool loaded = false;
@@ -16,7 +16,7 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
     sf::Text txt;
     txt.setFont(font);
     txt.setString(to_render.c_str());
-    txt.setCharacterSize(16);
+    txt.setCharacterSize(round(16 * scale));
 
     txt.setPosition(pos.x(), pos.y());
 

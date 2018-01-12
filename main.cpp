@@ -10,6 +10,7 @@
 #include "font_renderer.hpp"
 
 #define CARD_WIDTH 25
+#define CARD_HEIGHT CARD_WIDTH * 1.7
 
 struct card : basic_entity
 {
@@ -123,7 +124,7 @@ struct card : basic_entity
 
         shape.setPosition(info.pos.x(), info.pos.y());
 
-        vec2f dim = {CARD_WIDTH, 1.7 * CARD_WIDTH};
+        vec2f dim = {CARD_WIDTH, CARD_HEIGHT};
 
         shape.setSize(sf::Vector2f(dim.x(), dim.y()));
 
@@ -453,6 +454,11 @@ struct game_state
 
         #define CARDS_IN_LANE 13
 
+        std::random_device rd;
+        std::mt19937 g(rd());
+
+        std::shuffle(all_cards.elems.begin(), all_cards.elems.end(), g);
+
         for(int i=0; i < piles::COUNT; i++)
         {
             if(i == piles::LANE_DECK || i == piles::LANE_DISCARD || i == piles::ATTACKER_STACK || i == piles::DEFENDER_STACK)
@@ -496,7 +502,7 @@ struct game_state
         return false;
     }
 
-    void render_row(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset, bool only_render_single)
+    void render_row(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
     {
         card_list current_deck = get_cards(pile, cnum);
 
@@ -504,26 +510,8 @@ struct game_state
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        if(!only_render_single)
+        for(card* c : current_deck.cards)
         {
-            for(card* c : current_deck.cards)
-            {
-                c->info.pos = {lane_x, centre.y() + yoffset};
-
-                if(is_visible(c, pile, player, cnum))
-                {
-                    c->render_face_up(win);
-                }
-                else
-                {
-                    c->render_face_down(win);
-                }
-            }
-        }
-        else
-        {
-            card* c = current_deck.cards[cnum];
-
             c->info.pos = {lane_x, centre.y() + yoffset};
 
             if(is_visible(c, pile, player, cnum))
@@ -534,6 +522,35 @@ struct game_state
             {
                 c->render_face_down(win);
             }
+        }
+
+        vec2f br = {lane_x, centre.y() + yoffset};
+
+        br += (vec2f){CARD_WIDTH/2.f, CARD_HEIGHT/2.f};
+
+        if(current_deck.cards.size() > 0)
+            render_font(win, std::to_string(current_deck.cards.size()), br, {1,1,1,1}, 0.6f);
+    }
+
+    void render_individual(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
+    {
+        card_list current_deck = get_cards(pile, cnum);
+
+        float card_separation = CARD_WIDTH * 1.4f;
+
+        float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
+
+        card* c = current_deck.cards[cnum];
+
+        c->info.pos = {lane_x, centre.y() + yoffset};
+
+        if(is_visible(c, pile, player, cnum))
+        {
+            c->render_face_up(win);
+        }
+        else
+        {
+            c->render_face_down(win);
         }
     }
 
@@ -547,27 +564,27 @@ struct game_state
 
         for(int i=0; i < NUM_LANES; i++)
         {
-            render_row(piles::LANE_DECK, i, NUM_LANES, centre, player, win, 0.f, false);
+            render_row(piles::LANE_DECK, i, NUM_LANES, centre, player, win, 0.f);
 
-            render_row(piles::LANE_DISCARD, i, NUM_LANES, centre, player, win, vertical_sep, false);
+            render_row(piles::LANE_DISCARD, i, NUM_LANES, centre, player, win, vertical_sep);
 
-            render_row(piles::DEFENDER_STACK, i, NUM_LANES, centre, player, win, -vertical_sep, false);
+            render_row(piles::DEFENDER_STACK, i, NUM_LANES, centre, player, win, -vertical_sep);
 
-            render_row(piles::ATTACKER_STACK, i, NUM_LANES, centre, player, win, -2*vertical_sep, false);
+            render_row(piles::ATTACKER_STACK, i, NUM_LANES, centre, player, win, -2*vertical_sep);
         }
 
         card_list defender_hand = get_cards(piles::DEFENDER_HAND, -1);
 
         for(int i=0; i < defender_hand.cards.size(); i++)
         {
-            render_row(piles::DEFENDER_HAND, i, defender_hand.cards.size(), centre, player, win, vertical_sep * 4, true);
+            render_individual(piles::DEFENDER_HAND, i, defender_hand.cards.size(), centre, player, win, vertical_sep * 4);
         }
 
         card_list attacker_hand = get_cards(piles::ATTACKER_HAND, -1);
 
         for(int i=0; i < attacker_hand.cards.size(); i++)
         {
-            render_row(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5, true);
+            render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
     }
 
