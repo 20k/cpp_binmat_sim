@@ -18,6 +18,8 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
     txt.setString(to_render.c_str());
     txt.setCharacterSize(round(16 * scale));
 
+    pos = round(pos);
+
     txt.setPosition(pos.x(), pos.y());
 
     col = col * 255;
