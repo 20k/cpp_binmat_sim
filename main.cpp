@@ -1015,6 +1015,7 @@ struct game_state
         return result;
     }
 
+    ///make sure a face up bounce initiates combat!!!
     bool can_play_face_up_on(player_t player, card* to_play, card_list& appropriate_stack)
     {
         ///if I play a break and the stack does not contain a break and is not empty, can be played face up
