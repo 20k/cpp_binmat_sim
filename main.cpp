@@ -12,6 +12,18 @@
 #define CARD_WIDTH 25
 #define CARD_HEIGHT CARD_WIDTH * 1.7
 
+struct tooltip
+{
+    static std::string current;
+
+    static void add(const std::string& line)
+    {
+        current += line + "\n";
+    }
+};
+
+std::string tooltip::current;
+
 struct card : basic_entity
 {
     bool face_down = false;
@@ -113,6 +125,16 @@ struct card : basic_entity
     std::string get_string()
     {
         return strings[(int)(card_type - TWO)];
+    }
+
+    bool is_within(vec2f pos)
+    {
+        vec2f centre = info.pos;
+
+        vec2f tl = centre - (vec2f){CARD_WIDTH, CARD_HEIGHT}/2.f;
+        vec2f br = centre + (vec2f){CARD_WIDTH, CARD_HEIGHT}/2.f;
+
+        return pos.x() >= tl.x() && pos.y() >= tl.y() && pos.x() < br.x() && pos.y() < br.y();
     }
 
     void render_card_background(sf::RenderWindow& win, bool should_render_face_up)
@@ -463,6 +485,12 @@ namespace piles
         DEFENDER_HAND,
         COUNT,
     };
+
+    inline
+    bool is_lane_type(piles_t p)
+    {
+        return p == LANE_DISCARD || p == LANE_DECK || p == DEFENDER_STACK || p == ATTACKER_STACK;
+    }
 }
 
 struct lane
@@ -611,12 +639,32 @@ struct game_state
         return card_list();
     }
 
+    #define NUM_LANES 6
+
+    card_list get_all_visible_cards(player_t player)
+    {
+        card_list ret;
+
+        for(int i=0; i < piles::COUNT; i++)
+        {
+            if(is_lane_type((piles::piles_t)i))
+            {
+                for(int lane = 0; lane < NUM_LANES; lane++)
+                {
+                    card_list cards = get_visible_pile_cards_as((piles::piles_t)i, player, lane);
+
+                    ret.cards.insert(ret.cards.end(), cards.cards.begin(), cards.cards.end());
+                }
+            }
+        }
+
+        return ret;
+    }
+
     bool lane_has_faceup_top_card(int lane)
     {
         return lane >= 3;
     }
-
-    #define NUM_LANES 6
 
     void generate_new_game(card_manager& all_cards)
     {
@@ -1429,9 +1477,43 @@ int main()
 
         ImGui::End();
 
+
+        card_list visible_to = current_game.get_all_visible_cards(current_game.viewer);
+
+        sf::Mouse mouse;
+        auto mpos = mouse.getPosition(window);
+
+        std::deque<std::string> reversed;
+
+        for(card* c : visible_to.cards)
+        {
+            if(c->is_within({mpos.x, mpos.y}))
+            {
+                reversed.push_back(c->get_string());
+            }
+        }
+
+        if(reversed.size() > 0)
+        {
+            //reversed.push_front("BOTTOM");
+            reversed.push_back("Stack Top");
+        }
+
+        std::reverse(reversed.begin(), reversed.end());
+
+        for(auto& i : reversed)
+        {
+            tooltip::add(i);
+        }
+
         current_game.render(window, current_game.viewer);
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
+
+        if(tooltip::current.size() > 0)
+            ImGui::SetTooltip(tooltip::current.c_str());
+
+        tooltip::current.clear();
 
         ImGui::Render();
 
