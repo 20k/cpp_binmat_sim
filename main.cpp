@@ -195,6 +195,14 @@ struct card_manager : manager<card>
     }
 };
 
+void shuffle_cards(std::vector<card*>& cards)
+{
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    std::shuffle(cards.begin(), cards.end(), g);
+}
+
 bool is_power_of_2(int x)
 {
     return x > 0 && !(x & (x-1));
@@ -454,10 +462,7 @@ struct game_state
 
         #define CARDS_IN_LANE 13
 
-        std::random_device rd;
-        std::mt19937 g(rd());
-
-        std::shuffle(all_cards.elems.begin(), all_cards.elems.end(), g);
+        shuffle_cards(all_cards.elems);
 
         for(int i=0; i < piles::COUNT; i++)
         {
