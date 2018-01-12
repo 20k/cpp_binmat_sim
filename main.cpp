@@ -324,6 +324,20 @@ struct card_list
 
         return true;
     }
+
+    bool remove_card(card* c)
+    {
+        for(int i=0; i < cards.size(); i++)
+        {
+            if(cards[i] == c)
+            {
+                cards.erase(cards.begin() + i);
+                return true;
+            }
+        }
+
+        return false;
+    }
 };
 
 namespace piles
@@ -624,6 +638,23 @@ struct game_state
         assert(false);
     }
 
+    card_list& get_lane_stack_for_player(player_t player, int lane)
+    {
+        if(player == ATTACKER)
+        {
+            return get_cards(piles::ATTACKER_STACK, lane);
+        }
+
+        if(player == DEFENDER)
+        {
+            return get_cards(piles::DEFENDER_STACK, lane);
+        }
+
+        printf("Bad player in get lane stack for player\n");
+
+        assert(false);
+    }
+
     bool transfer_top_card(piles::piles_t to_pile, int to_lane, piles::piles_t from_pile, int from_lane)
     {
         card_list& to_cards = get_cards(to_pile, to_lane);
@@ -654,9 +685,6 @@ struct game_state
 
                 if(!success)
                 {
-                    ///shuffle in attacker discard pile into attacker deck
-                    ///l8r
-
                     success = get_cards(piles::ATTACKER_HAND, -1).shuffle_in(get_cards(piles::ATTACKER_DISCARD));
 
                     printf("no cards in attacker deck\n");
@@ -734,6 +762,18 @@ struct game_state
         }
 
         return false;
+    }
+
+    void play_to_stack_from_hand(player_t player, int lane, card* to_play)
+    {
+        card_list& hand = get_hand(player);
+
+        ///if false, tried to play a card not in hand
+        ///can obviously never happen in proper play
+        if(!hand.remove_card(to_play))
+            assert(false);
+
+        card_list& appropriate_stack = get_lane_stack_for_player(player, lane);
     }
 };
 
