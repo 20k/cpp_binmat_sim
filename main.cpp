@@ -1185,10 +1185,31 @@ struct game_state
 
             bool lane_cards_exist = lane_deck.cards.size() > 0;
 
-            if(lane_cards_exist)
+            /*if(lane_cards_exist)
             {
                 auto was_stolen = attacker_hand.take_top_card(lane_deck);
                 stolen.push_back(*was_stolen);
+
+                continue;
+            }
+
+            bool lane_discard_e*/
+
+            if(lane_cards_exist)
+            {
+                auto was_stolen = attacker_hand.take_top_card(lane_deck);
+
+                stolen.push_back(*was_stolen);
+                continue;
+            }
+
+            bool lane_discard_exists = lane_discard.cards.size() > 0;
+
+            if(lane_discard_exists)
+            {
+                lane_deck.shuffle_in(lane_discard);
+
+                attacker_hand.take_top_card(lane_deck);
 
                 continue;
             }
