@@ -327,7 +327,14 @@ struct card_list
             sum = do_wild_roundup(sum);
         }
 
-        return sum;
+        if(is_power_of_2(sum))
+        {
+            return log2(sum);
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     void prune_to_face_up()
