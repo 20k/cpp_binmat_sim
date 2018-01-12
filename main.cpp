@@ -237,6 +237,43 @@ struct card_list
     bool hidden_to_opposition_if_face_down = true;
     bool hidden_to_opposition_if_face_up = true;
 
+    bool face_up = false;
+
+    bool is_face_up()
+    {
+        return face_up && cards.size() > 0;
+    }
+
+    bool is_face_down()
+    {
+        return !face_up && cards.size() > 0;
+    }
+
+    bool accepts_face_down_cards()
+    {
+        return is_face_down() || cards.size() == 0;
+    }
+
+    bool add_face_down_card(card* c)
+    {
+        if(cards.size() == 0)
+        {
+            face_up = false;
+        }
+
+        if(is_face_up())
+            return false;
+
+        cards.push_back(c);
+    }
+
+    void add_face_up_card(card* c)
+    {
+        face_up = true;
+
+        cards.push_back(c);
+    }
+
     int calculate_stack_damage()
     {
         int sum = 0;
@@ -338,6 +375,17 @@ struct card_list
 
         return false;
     }
+
+    bool contains(card::value_t type)
+    {
+        for(card* c : cards)
+        {
+            if(c->is_type(type))
+                return true;
+        }
+
+        return false;
+    }
 };
 
 namespace piles
@@ -376,6 +424,7 @@ struct game_state
         DEFENDER,
         SPECTATOR,
         OVERLORD, ///can see everything
+        REAL_STATE, ///sees real face up/down status of cards
     };
 
     card_list& get_cards(piles::piles_t current_pile, int lane = -1)
@@ -410,6 +459,29 @@ struct game_state
     card_list get_visible_pile_cards_as(piles::piles_t current_pile, player_t player, int lane = -1)
     {
         using namespace piles;
+
+        if(player == OVERLORD)
+        {
+            return get_cards(current_pile, lane);
+        }
+
+        if(player == REAL_STATE)
+        {
+            card_list cards = get_cards(current_pile, lane);
+
+            card_list ret = cards;
+            ret.cards.clear();
+
+            for(card* c : cards.cards)
+            {
+                if(c->is_face_up())
+                {
+                    ret.cards.push_back(c);
+                }
+            }
+
+            return ret;
+        }
 
         if(current_pile == ATTACKER_DECK)
         {
@@ -475,6 +547,8 @@ struct game_state
                 return cards;
             }
         }
+
+        return card_list();
     }
 
     bool lane_has_faceup_top_card(int lane)
@@ -513,11 +587,21 @@ struct game_state
 
         for(int lane=0; lane < NUM_LANES; lane++)
         {
+            card_list& cards = get_cards(piles::LANE_DECK, lane);
+
             for(int card = 0; card < CARDS_IN_LANE; card++)
             {
-                card_list& cards = get_cards(piles::LANE_DECK, lane);
-
                 cards.cards.push_back(all_cards.fetch_without_replacement());
+            }
+
+            for(card* c : cards.cards)
+            {
+                c->face_down = true;
+            }
+
+            if(lane_has_faceup_top_card(lane))
+            {
+                cards.cards.back()->face_down = false;
             }
         }
     }
@@ -764,16 +848,106 @@ struct game_state
         return false;
     }
 
-    void play_to_stack_from_hand(player_t player, int lane, card* to_play)
+    bool can_play_face_up_on(player_t player, card* to_play, card_list& appropriate_stack)
+    {
+        ///if I play a break and the stack does not contain a break and is not empty, can be played face up
+        if(to_play->is_type(card::BREAK) && !appropriate_stack.contains(card::BREAK) && appropriate_stack.cards.size() > 0)
+            return true;
+
+        ///if I'm an attacker, can play a face up bounce on an empty stack
+        if(to_play->is_type(card::BOUNCE) && player == ATTACKER && appropriate_stack.cards.size() == 0)
+            return true;
+
+        return false;
+    }
+
+    bool can_play_face_down_on(player_t player, card* to_play, card_list& appropriate_stack)
+    {
+        if(!appropriate_stack.accepts_face_down_cards())
+            return false;
+
+        ///no 2 breaks in a stack
+        if(to_play->is_type(card::BREAK) && appropriate_stack.contains(card::BREAK))
+            return false;
+
+
+        return true;
+    }
+
+    void trigger_combat()
+    {
+        printf("combat\n");
+    }
+
+    bool play_card_on_stack(player_t player, card* to_play, card_list& appropriate_stack, bool face_up)
+    {
+        std::cout << "fup " << face_up << std::endl;
+
+        if(face_up && can_play_face_up_on(player, to_play, appropriate_stack))
+        {
+            to_play->face_down = false;
+
+            bool is_face_down = appropriate_stack.is_face_down();
+
+            appropriate_stack.add_face_up_card(to_play);
+
+            ///went from face down to face up
+            if(is_face_down)
+            {
+                trigger_combat();
+            }
+
+            return true;
+        }
+
+        if(!face_up && can_play_face_down_on(player, to_play, appropriate_stack))
+        {
+            to_play->face_down = true;
+
+            appropriate_stack.add_face_down_card(to_play);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool play_to_stack_from_hand(player_t player, int lane, int card_offset, bool face_up)
     {
         card_list& hand = get_hand(player);
 
+        if(card_offset < 0 || card_offset >= hand.cards.size())
+            return false;
+
+        card* to_play = hand.cards[card_offset];
+
         ///if false, tried to play a card not in hand
         ///can obviously never happen in proper play
-        if(!hand.remove_card(to_play))
-            assert(false);
+        //if(!hand.remove_card(to_play))
+        //    assert(false);
 
         card_list& appropriate_stack = get_lane_stack_for_player(player, lane);
+
+        bool success = play_card_on_stack(player, to_play, appropriate_stack, face_up);
+
+        if(!success)
+        {
+            printf("nope cannot play\n");
+        }
+
+        if(success)
+        {
+            hand.remove_card(to_play);
+        }
+
+        return success;
+    }
+
+    player_t viewer = REAL_STATE;
+
+    void set_viewer_state(player_t player)
+    {
+        viewer = player;
     }
 };
 
@@ -813,8 +987,15 @@ void do_ui(game_state& current_game)
     ///Inspect own hand
 
     static int lane_selected = 0;
+    static int is_faceup = false;
+    static int hand_card_offset = 0;
 
-    ImGui::InputInt("Lane", &lane_selected);;
+    ImGui::InputInt("Lane", &lane_selected);
+    ImGui::InputInt("Face Up?", &is_faceup);
+    ImGui::InputInt("Hand Card Number", &hand_card_offset);
+
+    is_faceup = clamp(is_faceup, 0, 1);
+    //hand_card_offset = clamp(hand_card_offset, 0, current);
 
     lane_selected = clamp(lane_selected, 0, 6);
 
@@ -830,7 +1011,7 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Attacker Play to Stack"))
     {
-
+        current_game.play_to_stack_from_hand(game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Attacker Initiate Combat At Lane"))
@@ -847,7 +1028,7 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Defender Play to Stack"))
     {
-
+        current_game.play_to_stack_from_hand(game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Discard Card to Lane Discard Pile"))
@@ -912,7 +1093,31 @@ int main()
 
         do_ui(current_game);
 
-        current_game.render(window, game_state::OVERLORD);
+        ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+            if(ImGui::Button("Attacker"))
+            {
+                current_game.set_viewer_state(game_state::ATTACKER);
+            }
+
+            if(ImGui::Button("Defender"))
+            {
+                current_game.set_viewer_state(game_state::DEFENDER);
+            }
+
+            if(ImGui::Button("See Everything"))
+            {
+                current_game.set_viewer_state(game_state::OVERLORD);
+            }
+
+            if(ImGui::Button("Real State"))
+            {
+                current_game.set_viewer_state(game_state::REAL_STATE);
+            }
+
+        ImGui::End();
+
+        current_game.render(window, current_game.viewer);
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
