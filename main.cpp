@@ -1201,11 +1201,6 @@ struct game_state
 
         card* to_play = hand.cards[card_offset];
 
-        ///if false, tried to play a card not in hand
-        ///can obviously never happen in proper play
-        //if(!hand.remove_card(to_play))
-        //    assert(false);
-
         card_list& appropriate_stack = get_lane_stack_for_player(player, lane);
 
         bool success = play_card_on_stack(player, to_play, appropriate_stack, face_up, lane);
