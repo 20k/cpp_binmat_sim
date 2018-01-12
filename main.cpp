@@ -310,6 +310,20 @@ struct card_list
 
         return true;
     }
+
+    bool shuffle_in(card_list& other)
+    {
+        if(other.cards.size() == 0)
+            return false;
+
+        cards.insert(cards.end(), other.cards.begin(), other.cards.end());
+
+        shuffle_cards(cards);
+
+        other.cards.clear();
+
+        return true;
+    }
 };
 
 namespace piles
@@ -643,9 +657,20 @@ struct game_state
                     ///shuffle in attacker discard pile into attacker deck
                     ///l8r
 
+                    success = get_cards(piles::ATTACKER_HAND, -1).shuffle_in(get_cards(piles::ATTACKER_DISCARD));
+
                     printf("no cards in attacker deck\n");
 
-                    return false;
+                    if(success)
+                    {
+                        printf("shuffled in discard\n");
+                    }
+                    else
+                    {
+                        printf("could not shuffle in discard");
+                    }
+
+                    return success;
                 }
 
                 return true;
@@ -662,7 +687,18 @@ struct game_state
                 {
                     printf("no cards in lane deck\n");
 
-                    return false;
+                    success = get_cards(piles::LANE_DECK, lane).shuffle_in(get_cards(piles::LANE_DISCARD, lane));
+
+                    if(success)
+                    {
+                        printf("shuffled in lane discard\n");
+                    }
+                    else
+                    {
+                        printf("attacker wins\n");
+                    }
+
+                    return success;
                 }
 
                 return true;
@@ -679,7 +715,18 @@ struct game_state
                 {
                     printf("no cards in lane deck\n");
 
-                    return false;
+                    success = get_cards(piles::LANE_DECK, lane).shuffle_in(get_cards(piles::LANE_DISCARD, lane));
+
+                    if(success)
+                    {
+                        printf("shuffled in lane discard\n");
+                    }
+                    else
+                    {
+                        printf("attacker wins\n");
+                    }
+
+                    return success;
                 }
 
                 return true;
