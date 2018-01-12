@@ -870,6 +870,9 @@ struct game_state
         if(to_play->is_type(card::BREAK) && appropriate_stack.contains(card::BREAK))
             return false;
 
+        ///cannot ever play a break on an empty stack
+        if(to_play->is_type(card::BREAK) && appropriate_stack.cards.size() == 0)
+            return false;
 
         return true;
     }
