@@ -973,7 +973,7 @@ struct game_state
 
         if(player == DEFENDER)
         {
-            if(player == piles::LANE_DECK)
+            if(pile == piles::LANE_DECK)
             {
                 bool success = transfer_top_card(piles::DEFENDER_HAND, -1, piles::LANE_DECK, lane);
 
