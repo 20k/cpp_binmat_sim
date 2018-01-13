@@ -651,6 +651,12 @@ struct game_state
                     ret.cards.insert(ret.cards.end(), cards.cards.begin(), cards.cards.end());
                 }
             }
+            else
+            {
+                card_list cards = get_visible_pile_cards_as((piles::piles_t)i, player, -1);
+
+                ret.cards.insert(ret.cards.end(), cards.cards.begin(), cards.cards.end());
+            }
         }
 
         return ret;
