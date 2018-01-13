@@ -1227,7 +1227,7 @@ struct game_state
         {
             to_play->face_down = false;
 
-            bool is_face_down = appropriate_stack.is_face_down();
+            bool is_face_down = appropriate_stack.is_face_down() || appropriate_stack.cards.size() == 0;
 
             appropriate_stack.add_face_up_card(to_play);
 
