@@ -1442,31 +1442,148 @@ void debug_stack(duk_context* ctx)
     duk_pop_n(ctx, 1);
 }
 
-void call_global_function(duk_context* ctx, const std::string& name)
+struct stack_duk
 {
-    duk_push_global_object(ctx);
+    int stack_val = 0;
+    duk_context* ctx = nullptr;
 
-    duk_get_prop_string(ctx, -1, name.c_str());
-    duk_call(ctx, 0);
+    std::vector<int> saved;
+
+    void save()
+    {
+        saved.push_back(stack_val);
+    }
+
+    int load()
+    {
+        stack_val = saved.back();
+
+        saved.pop_back();
+
+        return stack_val;
+    }
+
+    int inc()
+    {
+        stack_val++;
+
+        return stack_val;
+    }
+
+    void pop_n(int n)
+    {
+        duk_pop_n(ctx, n);
+        stack_val -= n;
+    }
+
+    int push_global_object()
+    {
+        duk_push_global_object(ctx);
+
+        stack_val++;
+
+        return stack_val-1;
+    }
+
+    int get_prop_string(int offset, const std::string& name)
+    {
+        duk_get_prop_string(ctx, offset, name.c_str());
+
+        stack_val++;
+
+        return stack_val-1;
+    }
+
+    int call(int args)
+    {
+        duk_call(ctx, args);
+    }
+
+    int dup_absolute(int absolute_value)
+    {
+        int diff = absolute_value - stack_val - 1;
+
+        duk_dup(ctx, diff);
+
+        stack_val++;
+
+        return stack_val-1;
+    }
+};
+
+int call_global_function(stack_duk& sd, const std::string& name)
+{
+    sd.save();
+
+    sd.push_global_object();
+
+    sd.get_prop_string(-1, name);
+
+    sd.call(0);
+
+    sd.load();
+
+    return sd.inc();
 }
 
-void call_implicit_function(duk_context* ctx, const std::string& name)
+int call_implicit_function(stack_duk& sd, const std::string& name)
 {
-    duk_get_prop_string(ctx, -1, name.c_str());
-    duk_call(ctx, 0);
+    //duk_get_prop_string(ctx, -1, name.c_str());
+    //duk_call(ctx, 0);
+    sd.save();
+
+    sd.get_prop_string(-1, name);
+    sd.call(0);
+    sd.load();
+
+    return sd.inc();
 }
 
-void register_function(duk_context* ctx, const std::string& function_str, const std::string& function_name)
+int call_function_from_absolute(stack_duk& sd, const std::string& name, int offset, std::vector<int> arg_offsets = std::vector<int>())
+{
+    sd.save();
+    sd.get_prop_string(offset, name);
+
+    //duk_get_prop_string(ctx, offset, name.c_str());
+
+    int running_bump = 1;
+
+    for(int& v : arg_offsets)
+    {
+        //duk_dup(sd.ctx, v - running_bump);
+
+        sd.dup_absolute(v);
+
+        running_bump++;
+    }
+
+    int ret = duk_pcall(sd.ctx, arg_offsets.size());
+
+    if(ret != DUK_EXEC_SUCCESS)
+    {
+        printf("error: %s\n", duk_safe_to_string(sd.ctx, -1));
+
+        //duk_pop(ctx);
+
+        sd.pop_n(1);
+    }
+
+    sd.load();
+
+    return sd.inc();
+}
+
+void register_function(stack_duk& sd, const std::string& function_str, const std::string& function_name)
 {
     std::string test_js = "var global = new Function(\'return this;\')();\n"
                            + function_str + "\n"
                            "global." + function_name + " = " + function_name + ";\n";//\n print(global.test)"
 
-    int pc = duk_peval_string(ctx, test_js.c_str());
+    int pc = duk_peval_string(sd.ctx, test_js.c_str());
 
     if(pc)
     {
-        printf("eval failed: %s\n", duk_safe_to_string(ctx, -1));
+        printf("eval failed: %s\n", duk_safe_to_string(sd.ctx, -1));
     }
 }
 
@@ -1481,35 +1598,54 @@ duk_context* js_interop_startup()
 
 void js_interop_test()
 {
-    auto ctx = js_interop_startup();
+    //auto ctx = js_interop_startup();
+
+    stack_duk sd;
+    sd.ctx = js_interop_startup();
 
     std::string test_js = "function test(){return Math.PI}";
 
-    register_function(ctx, test_js, "test");
+    register_function(sd, test_js, "test");
 
-    call_global_function(ctx, "test");
+    call_global_function(sd, "test");
 
-    std::cout << duk_get_number(ctx, -1) << std::endl;
+    std::cout << duk_get_number(sd.ctx, -1) << std::endl;
 
-    duk_pop_n(ctx, 2);
+    //duk_pop_n(ctx, 2);
+    sd.pop_n(2);
 
     std::string binmat_js = read_file();
 
-    register_function(ctx, binmat_js, "mainfunc");
+    register_function(sd, binmat_js, "mainfunc");
 
-    call_global_function(ctx, "mainfunc");
+    call_global_function(sd, "mainfunc");
 
-    call_implicit_function(ctx, "get_string");
+    call_implicit_function(sd, "get_string");
 
-    std::cout << duk_get_string(ctx, -1) << std::endl;
+    std::cout << duk_get_string(sd.ctx, -1) << std::endl;
 
+    //duk_pop_n(ctx, 1);
 
+    sd.pop_n(1);
+
+    int gs = call_function_from_absolute(sd, "game_state_make", -1);
+    int cm = call_function_from_absolute(sd, "card_manager_make", -2);
+
+    printf("gs cm %i %i\n", gs, cm);
+
+    call_function_from_absolute(sd, "game_state_generate_new_game", -3, {gs, cm});
+
+    //duk_pop_n(ctx, 0);
+
+    //call_function_from_absolute(sd, "debug", -4);
+
+    //std::cout << duk_get_string(sd.ctx, -1) << std::endl;
 
     //duk_pop_n(ctx, 2);
 
     //debug_stack(ctx);
 
-	duk_destroy_heap(ctx);
+	duk_destroy_heap(sd.ctx);
 }
 
 int main(int argc, char* argv[])

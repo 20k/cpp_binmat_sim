@@ -93,7 +93,7 @@ function mainfunc(context, args)
 
 		for (i = card_array.length - 1; i > 0; i--)
 		{
-			j = MATH.floor(MATH.random() * (i + 1));
+			j = Math.floor(Math.random() * (i + 1));
 			x = card_array[i];
 			card_array[i] = card_array[j];
 			card_array[j] = x;
@@ -1163,6 +1163,11 @@ function mainfunc(context, args)
 	{
 		return "String from JS";
 	}
+	
+	function debug(gs)
+	{
+		return "test";
+	}
 
 	return {
 			card_manager_make:card_manager_make,
@@ -1183,6 +1188,7 @@ function mainfunc(context, args)
 			game_state_is_face_up:game_state_is_face_up,
 
 			get_string:get_string,
+			debug:debug,
 
 			piles_is_lane_type:piles_is_lane_type,
 			piles:piles,
