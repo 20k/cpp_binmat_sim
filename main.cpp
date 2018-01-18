@@ -1445,6 +1445,7 @@ void debug_stack(duk_context* ctx)
 struct stack_duk
 {
     int stack_val = 0;
+    int function_implicit_call_point = 0;
     duk_context* ctx = nullptr;
 
     std::vector<int> saved;
@@ -1452,6 +1453,16 @@ struct stack_duk
     void save()
     {
         saved.push_back(stack_val);
+    }
+
+    void save_function_call_point()
+    {
+        function_implicit_call_point = stack_val;
+    }
+
+    int get_function_offset()
+    {
+        return function_implicit_call_point - stack_val - 1;
     }
 
     int load()
@@ -1539,10 +1550,10 @@ int call_implicit_function(stack_duk& sd, const std::string& name)
     return sd.inc();
 }
 
-int call_function_from_absolute(stack_duk& sd, const std::string& name, int offset, std::vector<int> arg_offsets = std::vector<int>())
+int call_function_from_absolute(stack_duk& sd, const std::string& name, std::vector<int> arg_offsets = std::vector<int>())
 {
     sd.save();
-    sd.get_prop_string(offset, name);
+    sd.get_prop_string(sd.get_function_offset(), name);
 
     //duk_get_prop_string(ctx, offset, name.c_str());
 
@@ -1628,16 +1639,18 @@ void js_interop_test()
 
     sd.pop_n(1);
 
-    int gs = call_function_from_absolute(sd, "game_state_make", -1);
-    int cm = call_function_from_absolute(sd, "card_manager_make", -2);
+    sd.save_function_call_point();
+
+    int gs = call_function_from_absolute(sd, "game_state_make");
+    int cm = call_function_from_absolute(sd, "card_manager_make");
 
     printf("gs cm %i %i\n", gs, cm);
 
-    call_function_from_absolute(sd, "game_state_generate_new_game", -3, {gs, cm});
+    call_function_from_absolute(sd, "game_state_generate_new_game", {gs, cm});
 
     //duk_pop_n(ctx, 0);
 
-    call_function_from_absolute(sd, "debug", -4, {gs});
+    call_function_from_absolute(sd, "debug", {gs});
 
     //std::cout << duk_get_string(sd.ctx, -1) << std::endl;
 
