@@ -1149,131 +1149,6 @@ function mainfunc(context, args)
 		return {ok:true};
 	}
 	
-	/*function game_exists_in_db(game_id)
-	{
-		var result = #db.f({game_id:game_id}).first();
-
-		if(result)
-			return true;
-		
-		return false;
-	}
-	
-	function save_users_to_db(game_id, attacker, defender)
-	{				
-		var res = #db.f({buser:game_id}).first();
-		
-		if(res)
-			return;
-		
-		#db.i({buser:game_id, attacker:attacker, defender:defender});		
-	}
-	
-	function is_attacker(game_id, user)
-	{
-		var res = #db.f({buser:game_id}).first();
-		
-		if(!res)
-			return false;
-		
-		return res.attacker == user;
-	}	
-	
-	function is_defender(game_id, user)
-	{
-		var res = #db.f({buser:game_id}).first();
-		
-		if(!res)
-			return false;
-		
-		return res.defender == user;
-	}
-	
-	function get_attacker(game_id)
-	{
-		var res = #db.f({buser:game_id}).first();
-		
-		if(!res)
-			return "";
-		
-		return res.attacker;
-	}
-	
-	function get_defender(game_id)
-	{
-		var res = #db.f({buser:game_id}).first();
-		
-		if(!res)
-			return "";
-		
-		return res.defender;
-	}
-	
-	function save_state_to_db(game_id, gs)
-	{
-		if(game_exists_in_db(game_id))
-		{
-			#db.r({game_id:game_id});
-		}
-		
-		// for(var i=0; i < piles["COUNT"]; i++)
-		// {
-			// if(piles_is_lane_type(i))
-			// {
-				// for(var lane = 0; lane < 6; lane++)
-				// {
-					// var cards = game_state_get_cards(gs, i, lane);				
-					
-					// #db.i({game_id:game_id, pile:i, lane:lane, data:cards});
-				// }
-			// }
-			// else
-			// {
-				// var cards = game_state_get_cards(gs, i, -1);
-				
-				// #db.i({game_id:game_id, pile:i, lane:-1, data:cards});
-			// }
-		// }
-		
-		#db.i({game_id:game_id, state:gs});
-	}
-	
-	function load_state_from_db(game_id)
-	{
-		if(!game_exists_in_db(game_id))
-			return null;
-		
-		var gs = game_state_make();
-				
-		// for(var i=0; i < piles["COUNT"]; i++)
-		// {
-			// if(piles_is_lane_type(i))
-			// {
-				// for(var lane = 0; lane < 6; lane++)
-				// {					
-					// var cards = #db.f({game_id:game_id, pile:i, lane:lane}).first().data;
-					
-					// game_state_reseat_cards(gs, i, lane, cards);
-				// }
-			// }
-			// else
-			// {
-				// var cards = #db.f({game_id:game_id, pile:i, lane:-1}).first().data;
-				
-				// game_state_reseat_cards(gs, i, -1, cards);
-			// }
-		// }
-		
-		// return gs;
-		
-		gs = #db.f({game_id:game_id}).first().state;
-		
-		if(!gs.turn)
-			gs.turn = 0;
-		
-		return gs
-	}*/
-	
 	function is_defender_turn(gs)
 	{
 		return (gs.turn % 2) == 0;
@@ -1282,6 +1157,11 @@ function mainfunc(context, args)
 	function is_attacker_turn(gs)
 	{
 		return !is_defender_turn(gs);
+	}
+	
+	function get_string()
+	{
+		return "String from JS";
 	}
 	
 	return {
@@ -1302,19 +1182,14 @@ function mainfunc(context, args)
 			game_state_is_face_down:game_state_is_face_down,
 			game_state_is_face_up:game_state_is_face_up,
 			
-			//save_state_to_db:save_state_to_db,
-			//load_state_from_db:load_state_from_db,
+			get_string:get_string,
+			
 			piles_is_lane_type:piles_is_lane_type,
 			piles:piles,
 			piles_name:piles_name,
 			player_t:player_t,
 			value_t:value_t,
 			card_strings:card_strings,
-			//save_users_to_db:save_users_to_db,
-			//is_attacker:is_attacker,
-			//is_defender:is_defender,
-			//get_attacker:get_attacker,
-			//get_defender:get_defender,
 			is_defender_turn:is_defender_turn,
 			is_attacker_turn:is_attacker_turn
 			}
