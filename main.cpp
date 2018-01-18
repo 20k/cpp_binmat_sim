@@ -1647,6 +1647,9 @@ void js_interop_test()
     printf("gs cm %i %i\n", gs, cm);
 
     call_function_from_absolute(sd, "game_state_generate_new_game", {gs, cm});
+    ///does not return
+    ///so we can get it off the stack
+    sd.pop_n(1);
 
     //duk_pop_n(ctx, 0);
 
