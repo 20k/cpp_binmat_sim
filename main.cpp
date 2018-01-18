@@ -1439,60 +1439,13 @@ void debug_stack(duk_context* ctx)
     duk_pop_n(ctx, 1);
 }
 
-/*void call_global(duk_context* ctx, const std::string& name, std::vector<std::string> args)
+
+void call_function(duk_context* ctx, const std::string& name)
 {
-
-}*/
-
-int compile(duk_context* ctx, void* udata)
-{
-    #if 0
-    duk_compile(ctx, DUK_COMPILE_EVAL);
-	duk_push_global_object(ctx);
-	duk_insert(ctx, -2);  /* [ ... global func ] */
-	duk_put_prop_string(ctx, -2, "_USERCODE");
-	duk_pop(ctx);
-	#endif // 0
-
-
-
-	//int pc = duk_peval_string(ctx, "print(_USERCODE());");
-
-	#if 0
-	int pc = duk_peval_string(ctx, "print((new Function(\'return this;\')()).test());");
-
-	if(pc)
-    {
-        printf("eval failed: %s\n", duk_safe_to_string(ctx, -1));
-    }
-
-	printf("pc %i\n", pc);
-
-	std::cout << duk_get_number(ctx, -1) << std::endl;
-
-	printf("hi\n");
-	#endif // 0
-
     duk_push_global_object(ctx);
 
-    //debug_stack(ctx);
-
-    duk_get_prop_string(ctx, -1, "test");
+    duk_get_prop_string(ctx, -1, name.c_str());
     duk_call(ctx, 0);
-
-    //duk_push_string(ctx, "hello");
-
-    //std::string str = duk_get_string(ctx, -1);
-
-    std::string str = std::to_string(duk_get_number(ctx, -1));
-
-    duk_pop_n(ctx, 2);
-
-    std::cout << str << std::endl;
-
-    debug_stack(ctx);
-
-	return 0;
 }
 
 void register_function(duk_context* ctx, const std::string& function_str, const std::string& function_name)
@@ -1510,128 +1463,17 @@ void js_interop_test()
 
     print_register(ctx);
 
-	/*duk_push_c_function(ctx, native_print, DUK_VARARGS);
-	duk_put_global_string(ctx, "print");
-	duk_push_c_function(ctx, native_adder, DUK_VARARGS);
-	duk_put_global_string(ctx, "adder");
-
-	duk_eval_string(ctx, "print('Hello world!');");
-
-	duk_eval_string(ctx, "print('2+3=' + adder(2, 3));");
-	duk_pop(ctx); */
-
-    /*std::string file = read_file();
-
-    duk_push_lstring(ctx, file.c_str(), file.length());
-    duk_push_string(ctx, "binmat_sim.js");*/
-
-    //std::string test_js = "var global = new Function(\'return this;\')();\n function test() {return Math.PI;}\n global.test = test;\n print(global.test)";
-
-    //duk_push_string(ctx, test_js.c_str());
-    //duk_push_string(ctx, "test");
-
-    //duk_peval_string(ctx, test_js.c_str());
-
     std::string test_js = "function test(){return Math.PI}";
 
     register_function(ctx, test_js, "test");
 
-    compile(ctx, nullptr);
+    call_function(ctx, "test");
 
-    //duk_safe_call(ctx, compile, nullptr, 2, 1);
+    std::cout << duk_get_number(ctx, -1) << std::endl;
 
-    debug_stack(ctx);
-
-    //duk_eval_string(ctx, "print(_USERCODE())");
-
-
-    #if 0
-    std::string test_js = "function test() {return Math.PI;}\ntest;";
-    //std::string test_js = "function(){function test() {return Math.PI;}\nreturn test;}";
-    //std::string test_js = "function t1(){return Math.PI;}\nfunction test() {return t1;}";
-
-    #if 0
-    /* reading [global object].Math.PI */
-    duk_push_global_object(ctx);    /* -> [ global ] */
-    duk_push_string(ctx, "Math");   /* -> [ global "Math" ] */
-    duk_get_prop(ctx, -2);          /* -> [ global Math ] */
-    duk_push_string(ctx, "PI");     /* -> [ global Math "PI" ] */
-    duk_get_prop(ctx, -2);          /* -> [ global Math PI ] */
-    printf("Math.PI is %lf\n", (double) duk_get_number(ctx, -1));
-    duk_pop_n(ctx, 3);
-    #endif // 0
-
-
-    //duk_eval_string(ctx, test_js.c_str());
+    duk_pop_n(ctx, 2);
 
     debug_stack(ctx);
-
-    duk_push_string(ctx, test_js.c_str());
-    duk_push_string(ctx, "dfdf");
-
-    int cp = duk_pcompile(ctx, DUK_COMPILE_EVAL);
-
-    debug_stack(ctx);
-
-
-
-    //duk_dump_function(ctx);
-
-    //printf("%i\n", cp);
-
-    //duk_push_string(ctx, "test");
-    //duk_get_prop(ctx, -2);
-    //duk_push_string(ctx, "test");
-    //duk_get_prop(ctx, -2);
-    //duk_call(ctx, 0);
-
-    //duk_push_string(ctx, "test");
-    //duk_get_prop(ctx, -2);
-
-    debug_stack(ctx);
-
-    //duk_call(ctx, 0);
-
-    debug_stack(ctx);
-
-    //duk_push_global_object(ctx);
-    duk_get_prop_string(ctx, -1, "test");
-
-    debug_stack(ctx);
-
-    duk_call(ctx, 0);
-
-    //duk_call(ctx, 0);
-
-    printf("Test is %lf\n", (double)duk_get_number(ctx, -1));
-    duk_pop_n(ctx, 1);
-    #endif // 0
-
-    #if 0
-    duk_push_string(ctx, "print('global');\n"
-                     "function hello() { print('Hello world!'); }\n"
-                     "123;");
-    duk_push_string(ctx, "hello");
-    int cp = duk_pcompile(ctx, 0);   /* [ source filename ] -> [ func ] */
-
-    printf("%i cp\n", cp);
-
-    duk_call(ctx, 0);      /* [ func ] -> [ result ] */
-    printf("program result: %lf\n", (double) duk_get_number(ctx, -1));
-    duk_pop(ctx);
-    #endif
-
-    /* reading a configuration value, cfg_idx is normalized
-     * index of a configuration object.
-     */
-    /*duk_push_string(ctx, "mySetting");
-    if (duk_get_prop(ctx, cfg_idx)) {
-        const char *str_value = duk_to_string(ctx, -1);
-        printf("configuration setting present, value: %s\n", str_value);
-    } else {
-        printf("configuration setting missing\n");
-    }
-    duk_pop(ctx); */ /* remember to pop, regardless of whether or not present */
 
 	duk_destroy_heap(ctx);
 }
