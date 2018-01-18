@@ -48,6 +48,18 @@
 			<Add option="-lflac" />
 			<Add option="-lopenal32" />
 			<Add option="-logg" />
+			<Add library="C:/msys64/mingw64/x86_64-w64-mingw32/lib/libwinmm.lib.a" />
+			<Add library="C:/msys64/mingw64/x86_64-w64-mingw32/lib/libwinmm.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_base.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_external_snapshot.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_init.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_initializers.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_libbase.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_libplatform.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_libsampler.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/src/libv8_nosnapshot.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/third_party/icu/libicui18n.a" />
+			<Add library="C:/vb/o/x64.release/obj.target/third_party/icu/libicuuc.a" />
 		</Linker>
 		<Unit filename="../serialise/serialise.cpp" />
 		<Unit filename="../serialise/serialise.hpp" />
