@@ -1415,12 +1415,15 @@ void do_ui(game_state& current_game)
 
 std::string read_file()
 {
-    std::ifstream t("binmat_sim.js");
-    t.seekg(0, std::ios::end);
-    size_t size = t.tellg();
-    std::string buffer(size, ' ');
-    t.seekg(0);
-    t.read(&buffer[0], size);
+    FILE *f = fopen("binmat_sim.js", "rb");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);  //same as rewind(f);
+
+    std::string buffer;
+    buffer.resize(fsize + 1);
+    fread(&buffer[0], fsize, 1, f);
+    fclose(f);
 
     return buffer;
 }
@@ -1439,8 +1442,7 @@ void debug_stack(duk_context* ctx)
     duk_pop_n(ctx, 1);
 }
 
-
-void call_function(duk_context* ctx, const std::string& name)
+void call_global_function(duk_context* ctx, const std::string& name)
 {
     duk_push_global_object(ctx);
 
@@ -1448,10 +1450,16 @@ void call_function(duk_context* ctx, const std::string& name)
     duk_call(ctx, 0);
 }
 
+void call_implicit_function(duk_context* ctx, const std::string& name)
+{
+    duk_get_prop_string(ctx, -1, name.c_str());
+    duk_call(ctx, 0);
+}
+
 void register_function(duk_context* ctx, const std::string& function_str, const std::string& function_name)
 {
     std::string test_js = "var global = new Function(\'return this;\')();\n"
-                           + function_str + "\n";
+                           + function_str + "\n"
                            "global." + function_name + " = " + function_name + ";\n";//\n print(global.test)"
 
     int pc = duk_peval_string(ctx, test_js.c_str());
@@ -1462,22 +1470,24 @@ void register_function(duk_context* ctx, const std::string& function_str, const 
     }
 }
 
-void js_interop_test()
+duk_context* js_interop_startup()
 {
     duk_context *ctx = duk_create_heap_default();
 
     print_register(ctx);
 
+    return ctx;
+}
+
+void js_interop_test()
+{
+    auto ctx = js_interop_startup();
+
     std::string test_js = "function test(){return Math.PI}";
 
     register_function(ctx, test_js, "test");
 
-    call_function(ctx, "test");
-
-
-    //std::string binmat_js = read_file();
-
-    //register_function(ctx, binmat_js, "mainfunc");
+    call_global_function(ctx, "test");
 
     std::cout << duk_get_number(ctx, -1) << std::endl;
 
@@ -1487,11 +1497,17 @@ void js_interop_test()
 
     register_function(ctx, binmat_js, "mainfunc");
 
-    call_function(ctx, "mainfunc");
+    call_global_function(ctx, "mainfunc");
 
-    duk_pop_n(ctx, 2);
+    call_implicit_function(ctx, "get_string");
 
-    debug_stack(ctx);
+    std::cout << duk_get_string(ctx, -1) << std::endl;
+
+
+
+    //duk_pop_n(ctx, 2);
+
+    //debug_stack(ctx);
 
 	duk_destroy_heap(ctx);
 }
