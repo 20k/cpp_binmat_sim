@@ -1166,7 +1166,14 @@ function mainfunc(context, args)
 	
 	function debug(gs)
 	{
-		return "test";
+		var cards = game_state_get_cards(gs, piles["LANE_DECK"], 0);
+		
+		for(var i = 0; i < cards.cards.length; i++)
+		{
+			var c = cards.cards[i];
+			
+			print(c.card_type);
+		}
 	}
 
 	return {

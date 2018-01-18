@@ -1637,7 +1637,7 @@ void js_interop_test()
 
     //duk_pop_n(ctx, 0);
 
-    //call_function_from_absolute(sd, "debug", -4);
+    call_function_from_absolute(sd, "debug", -4, {gs});
 
     //std::cout << duk_get_string(sd.ctx, -1) << std::endl;
 
