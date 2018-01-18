@@ -1454,7 +1454,12 @@ void register_function(duk_context* ctx, const std::string& function_str, const 
                            + function_str + "\n";
                            "global." + function_name + " = " + function_name + ";\n";//\n print(global.test)"
 
-    duk_peval_string(ctx, test_js.c_str());
+    int pc = duk_peval_string(ctx, test_js.c_str());
+
+    if(pc)
+    {
+        printf("eval failed: %s\n", duk_safe_to_string(ctx, -1));
+    }
 }
 
 void js_interop_test()
@@ -1469,7 +1474,20 @@ void js_interop_test()
 
     call_function(ctx, "test");
 
+
+    //std::string binmat_js = read_file();
+
+    //register_function(ctx, binmat_js, "mainfunc");
+
     std::cout << duk_get_number(ctx, -1) << std::endl;
+
+    duk_pop_n(ctx, 2);
+
+    std::string binmat_js = read_file();
+
+    register_function(ctx, binmat_js, "mainfunc");
+
+    call_function(ctx, "mainfunc");
 
     duk_pop_n(ctx, 2);
 

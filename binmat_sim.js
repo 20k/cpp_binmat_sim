@@ -1,9 +1,9 @@
 function mainfunc(context, args)
 {
-	let suit_t = {"FORM":0, "KIN":1, "DATA":2, "CHAOS":3, "VOID":4, "CHOICE":5, "COUNT_SUIT":6}
-	let value_t = {"TWO":2, "THREE":3, "FOUR":4, "FIVE":5, "SIX":6, "SEVEN":7, "EIGHT":8, "NINE":9, "TEN":10, "TRAP":11, "WILD":12, "BOUNCE":13, "BREAK":14, "COUNT_VALUE":15} 
+	var suit_t = {"FORM":0, "KIN":1, "DATA":2, "CHAOS":3, "VOID":4, "CHOICE":5, "COUNT_SUIT":6};
+	var value_t = {"TWO":2, "THREE":3, "FOUR":4, "FIVE":5, "SIX":6, "SEVEN":7, "EIGHT":8, "NINE":9, "TEN":10, "TRAP":11, "WILD":12, "BOUNCE":13, "BREAK":14, "COUNT_VALUE":15}; 
 	
-	let card_strings = {2:"2",
+	var card_strings = {2:"2",
         3:"3",
         4:"4",
         5:"5",
@@ -20,7 +20,7 @@ function mainfunc(context, args)
 	
 	function card_make()
 	{
-		let card = new Object();
+		var card = new Object();
 		
 		card.face_down = false;
 		card.suit_type = suit_t["COUNT_SUIT"];
@@ -57,16 +57,16 @@ function mainfunc(context, args)
 	
 	function card_manager_make()
 	{
-		let card_manager = new Object();
+		var card_manager = new Object();
 		
 		card_manager.elems = []
 		card_manager.card_fetch_counter = 0;
 		
-		for(let suit_offset = 0; suit_offset < 6; suit_offset++)
+		for(var suit_offset = 0; suit_offset < 6; suit_offset++)
 		{
-			for(let card_offset = 0; card_offset < 13; card_offset++)
+			for(var card_offset = 0; card_offset < 13; card_offset++)
 			{
-				let c = card_make();
+				var c = card_make();
 				
 				card_set_from_offsets(c, suit_offset, card_offset);
 				
@@ -89,7 +89,7 @@ function mainfunc(context, args)
 	
 	function shuffle_cards(card_array)
 	{
-		let j, x, i;
+		var j, x, i;
 		
 		for (i = card_array.length - 1; i > 0; i--) 
 		{
@@ -127,7 +127,7 @@ function mainfunc(context, args)
 	
 	function card_list_make()
 	{
-		let card_list = new Object();
+		var card_list = new Object();
 		
 		card_list.cards = []
 		card_list.face_up = false;
@@ -163,7 +163,7 @@ function mainfunc(context, args)
 	
 	function card_list_make_cards_face_down(cl)
 	{
-		for(let i=0; i < cl.cards.length; i++)
+		for(var i=0; i < cl.cards.length; i++)
 		{
 			cl.cards[i].face_down = true;
 		}
@@ -171,9 +171,9 @@ function mainfunc(context, args)
 	
 	function card_list_get_of_type(cl, type)
 	{
-		let ret = card_list_make();
+		var ret = card_list_make();
 		
-		for(let i=0; i < cl.cards.length; i++)
+		for(var i=0; i < cl.cards.length; i++)
 		{
 			if(card_is_type(cl.cards[i], type))
 			{
@@ -208,27 +208,33 @@ function mainfunc(context, args)
 	
 	function card_list_calculate_stack_damage(cl)
 	{
-		let sum = 0;
+		var sum = 0;
 
-        for(let c1 of cl.cards)
+        //for(var c1 of cl.cards)
+		for(var k2 = 0; k2 < cl.cards.length; k2++)
         {
-            if(card_is_modifier(c1))
+			var current_card = cl.cards[k2];
+			
+            if(card_is_modifier(current_card))
                 continue;
 
-            sum += card_get_value(c1);
+            sum += card_get_value(current_card);
         }
 
-        let powers_to_bump_up = 0;
+        var powers_to_bump_up = 0;
 
-        for(let c2 of cl.cards)
+        //for(var c2 of cl.cards)
+		for(var k1 = 0; k1 < cl.cards.length; k1++)
         {
+			var c2 = cl.cards[k1];
+			
             if(card_is_type(c2, "WILD"))
             {
                 powers_to_bump_up++;
             }
         }
 
-        for(let i=0; i < powers_to_bump_up; i++)
+        for(var i=0; i < powers_to_bump_up; i++)
         {
             ///so. If sum is 7, should get rounded up to 8
             ///if 8, get rounded up to 16 etc
@@ -248,7 +254,7 @@ function mainfunc(context, args)
 	
 	function card_list_prune_to_face_up(cl)
 	{
-		for(let i = 0; i < cl.cards.length; i++)
+		for(var i = 0; i < cl.cards.length; i++)
 		{
 			if(!card_is_face_up(cl.cards[i]))
 			{
@@ -261,7 +267,7 @@ function mainfunc(context, args)
 	
 	function card_list_only_top(cl)
 	{
-		let new_cl = card_list_make();
+		var new_cl = card_list_make();
 		
 		if(cl.cards.length > 0)
 		{
@@ -278,7 +284,7 @@ function mainfunc(context, args)
 			return {ok:false}
 		}
 		
-		let c = other.cards[other.cards.length-1];
+		var c = other.cards[other.cards.length-1];
 		
 		other.cards.pop();
 		
@@ -303,7 +309,7 @@ function mainfunc(context, args)
 	
 	function card_list_remove_card(cl, card)
 	{
-		for(let i=0; i < cl.cards.length; i++)
+		for(var i=0; i < cl.cards.length; i++)
         {
             if(cl.cards[i] == card)
             {
@@ -317,8 +323,11 @@ function mainfunc(context, args)
 	
 	function card_list_contains(cl, type)
 	{
-		for(let c of cl.cards)
+		//for(var c of cl.cards)
+		for(var k3 = 0; k3 < cl.cards.length; k3++)
 		{
+			var c = cl.cards[k3];
+			
 			if(card_is_type(c, type))
 			{
 				return true;
@@ -330,8 +339,11 @@ function mainfunc(context, args)
 	
 	function card_list_steal_all(cl, other)
 	{
-		for(let c of other.cards)
+		//for(var c of other.cards)
+		for(var counter = 0; counter < other.cards.length; counter++)
 		{
+			var c = other.cards[counter];
+			
 			cl.cards.push(c);
 		}
 		
@@ -340,7 +352,7 @@ function mainfunc(context, args)
 	
 	function card_list_steal_all_of(cl, other, type)
 	{
-		for(let i=0; i < other.cards.length; i++)
+		for(var i=0; i < other.cards.length; i++)
 		{
 			if(card_is_type(other.cards[i], type))
 			{
@@ -353,7 +365,7 @@ function mainfunc(context, args)
 		}
 	}
 	
-	let piles = 
+	var piles = 
 	{
 		"LANE_DISCARD":0,
 		"LANE_DECK":1,
@@ -367,7 +379,7 @@ function mainfunc(context, args)
         "COUNT":8
 	}
 	
-	let piles_name = 
+	var piles_name = 
 	[
 		"Lane Discard",
 		"Lane Deck",
@@ -387,11 +399,11 @@ function mainfunc(context, args)
 	
 	function lane_make()
 	{
-		let lane = new Object();
+		var lane = new Object();
 		
 		lane.card_piles = []
 		
-		for(let i=0; i < 4; i++)
+		for(var i=0; i < 4; i++)
 		{
 			lane.card_piles.push(card_list_make());
 		}
@@ -399,24 +411,24 @@ function mainfunc(context, args)
 		return lane;
 	}
 	
-	let player_t = {"ATTACKER":0, "DEFENDER":1, "SPECTATOR":2, "OVERLORD":3, "REAL_STATE":4}
+	var player_t = {"ATTACKER":0, "DEFENDER":1, "SPECTATOR":2, "OVERLORD":3, "REAL_STATE":4}
 	
-	let num_lanes = 6;
+	var num_lanes = 6;
 	
 	function game_state_make()
 	{
-		let game_state = new Object();
+		var game_state = new Object();
 		
 		game_state.lanes = []
 		game_state.piles = []
 		game_state.turn = 0;
 		
-		for(let i=0; i < num_lanes; i++)
+		for(var i=0; i < num_lanes; i++)
 		{
 			game_state.lanes.push(lane_make())
 		}
 		
-		for(let i=0; i < 4; i++)
+		for(var i=0; i < 4; i++)
 		{
 			game_state.piles.push(card_list_make())
 		}
@@ -492,13 +504,16 @@ function mainfunc(context, args)
 
         if(player == player_t["REAL_STATE"])
         {
-            let cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
+            var cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
 
-            let ret = card_list_clone(cards);
+            var ret = card_list_clone(cards);
             ret.cards = [];
 
-            for(let c of cards.cards)
+            //for(var c of cards.cards)
+			for(var card_count = 0; card_count < cards.cards.length; card_count++)
             {
+				var c = cards.cards[card_count];
+				
                 if(card_is_face_up(c))
                 {
                     ret.cards.push(c);
@@ -530,7 +545,7 @@ function mainfunc(context, args)
 
         if(current_pile == piles["LANE_DECK"])
         {			
-            let cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
+            var cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
 
             if(!lane_has_faceup_top_card(lane))
                 return card_list_make();
@@ -547,7 +562,7 @@ function mainfunc(context, args)
         if(current_pile == piles["DEFENDER_STACK"])
         {
             ///important that this is a copy
-            let cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
+            var cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
 
             if(player != player_t["ATTACKER"])
                 return cards;
@@ -561,7 +576,7 @@ function mainfunc(context, args)
 
         if(current_pile == piles["ATTACKER_STACK"])
         {
-            let cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
+            var cards = card_list_clone(game_state_get_cards(gs, current_pile, lane));
 
             if(player != player_t["DEFENDER"])
                 return cards;
@@ -578,36 +593,36 @@ function mainfunc(context, args)
 	
 	function game_state_is_face_down(gs, pile, lane)
 	{
-		let cards = game_state_get_cards(gs, pile, lane);
+		var cards = game_state_get_cards(gs, pile, lane);
 		
 		return card_list_is_face_down(cards);
 	}
 	
 	function game_state_is_face_up(gs, pile, lane)
 	{
-		let cards = game_state_get_cards(gs, pile, lane);
+		var cards = game_state_get_cards(gs, pile, lane);
 		
 		return card_list_is_face_up(cards);
 	}
 	
 	function game_state_get_all_visible_cards(gs, player)
 	{
-		let ret = card_list_make();
+		var ret = card_list_make();
 		
-		for(let i=0; i < piles["COUNT"]; i++)
+		for(var i=0; i < piles["COUNT"]; i++)
 		{
 			if(piles_is_lane_type(i))
 			{
-				for(let lane = 0; lane < num_lanes; lane++)
+				for(var lane = 0; lane < num_lanes; lane++)
 				{
-					let cards = game_state_get_visible_pile_cards_as(gs, i, player, lane);
+					var cards = game_state_get_visible_pile_cards_as(gs, i, player, lane);
 					
 					ret.cards.push.apply(ret.cards, cards.cards)
 				}
 			}
 			else
 			{
-				let cards = game_state_get_visible_pile_cards_as(gs, i, player, -1);
+				var cards = game_state_get_visible_pile_cards_as(gs, i, player, -1);
 				
 				ret.cards.push.apply(ret.cards, cards.cards)
 			}
@@ -618,7 +633,7 @@ function mainfunc(context, args)
 	
 	function game_state_get_pile_info(gs, pile, player, lane)
 	{
-		let num = game_state_get_cards(gs, pile, lane).cards.length;
+		var num = game_state_get_cards(gs, pile, lane).cards.length;
 		
 		return {num:num};
 	}
@@ -627,40 +642,43 @@ function mainfunc(context, args)
 	{
 		card_manager_reset_fetching(all_cards);
 		
-		let cards_in_lane = 13;
+		var cards_in_lane = 13;
 		
 		shuffle_cards(all_cards.elems);
 		
-		for(let i = 0; i < piles["COUNT"]; i++)
+		for(var i = 0; i < piles["COUNT"]; i++)
 		{
 			if(piles_is_lane_type(i))
 			{
-				for(let lane = 0; lane < num_lanes; lane++)
+				for(var lane = 0; lane < num_lanes; lane++)
 				{
-					let clist = game_state_get_cards(gs, i, lane);
+					var clist = game_state_get_cards(gs, i, lane);
 					
 					card_list_clear(clist);
 				}
 			}
 			else
 			{
-				let clist = game_state_get_cards(gs, i, -1);
+				var clist = game_state_get_cards(gs, i, -1);
 				
 				card_list_clear(clist);
 			}
 		}
 		
-		for(let lane = 0; lane < num_lanes; lane++)
+		for(var lane = 0; lane < num_lanes; lane++)
 		{
-			let cards = game_state_get_cards(gs, piles["LANE_DECK"], lane);
+			var cards = game_state_get_cards(gs, piles["LANE_DECK"], lane);
 			
-			for(let card_count = 0; card_count < cards_in_lane; card_count++)
+			for(var card_count = 0; card_count < cards_in_lane; card_count++)
 			{
 				cards.cards.push(card_manager_fetch_without_replacement(all_cards));
 			}
 						
-			for(let c of cards.cards)
+			//for(var c of cards.cards)
+			for(var to_clear = 0; to_clear < cards.cards.length; to_clear++)
 			{				
+				var c = cards.cards[to_clear];
+		
 				c.face_down = true;
 			}
 			
@@ -675,10 +693,13 @@ function mainfunc(context, args)
 	
 	function game_state_is_visible(gs, check, pile, player, lane)
 	{
-		let visible_cards = game_state_get_visible_pile_cards_as(gs, pile, player, lane);
+		var visible_cards = game_state_get_visible_pile_cards_as(gs, pile, player, lane);
 		
-		for(let c of visible_cards.cards)
+		//for(var c of visible_cards.cards)
+		for(var visible_count = 0; visible_count < visible_cards.cards.length; visible_count++)
 		{
+			var c = visible_cards.cards[visible_count];
+			
 			if(c == check)
 				return true;
 		}
@@ -714,26 +735,26 @@ function mainfunc(context, args)
 	
 	function game_state_transfer_top_card(gs, to_pile, to_lane, from_pile, from_lane)
 	{
-		let to_cards = game_state_get_cards(gs, to_pile, to_lane);
-		let from_cards = game_state_get_cards(gs, from_pile, from_lane);
+		var to_cards = game_state_get_cards(gs, to_pile, to_lane);
+		var from_cards = game_state_get_cards(gs, from_pile, from_lane);
 		
 		return card_list_take_top_card(to_cards, from_cards).ok;
 	}
 	
 	function game_state_lane_protected(gs, lane)
 	{
-		let defender_cards = game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
+		var defender_cards = game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
 		
 		return defender_cards.cards.length > 0;
 	}
 	
 	function game_state_ensure_faceup_lanes(gs)
 	{
-		for(let i=0; i < num_lanes; i++)
+		for(var i=0; i < num_lanes; i++)
 		{
 			if(lane_has_faceup_top_card(i))
 			{
-				let cards = game_state_get_cards(gs, piles["LANE_DECK"], i);
+				var cards = game_state_get_cards(gs, piles["LANE_DECK"], i);
 				
 				if(cards.cards.length > 0)
 				{
@@ -762,13 +783,13 @@ function mainfunc(context, args)
         if(player != player_t["ATTACKER"] && player != player_t["DEFENDER"])
             return {ok:false};
 
-        let hand = game_state_get_hand(gs, player);
+        var hand = game_state_get_hand(gs, player);
 
         if(player == player_t["ATTACKER"])
         {
             if(pile == piles["ATTACKER_DECK"])
             {
-                let success = game_state_transfer_top_card(gs, piles["ATTACKER_HAND"], -1, piles["ATTACKER_DECK"], -1);
+                var success = game_state_transfer_top_card(gs, piles["ATTACKER_HAND"], -1, piles["ATTACKER_DECK"], -1);
 
                 if(!success)
                 {
@@ -792,7 +813,7 @@ function mainfunc(context, args)
                 if(game_state_lane_protected(gs, lane))
                     return {ok:false};
 
-				let success = game_state_transfer_top_card(gs, piles["ATTACKER_HAND"], -1, piles["LANE_DECK"], lane);
+				var success = game_state_transfer_top_card(gs, piles["ATTACKER_HAND"], -1, piles["LANE_DECK"], lane);
 				
                 if(!success)
                 {
@@ -821,7 +842,7 @@ function mainfunc(context, args)
         {
             if(pile == piles["LANE_DECK"])
             {
-				let success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
+				var success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
 				
                 if(!success)
                 {
@@ -854,7 +875,7 @@ function mainfunc(context, args)
 		if(lane < 0 || lane >= 6)
 			return {ok:false}
 		
-		let result = game_state_draw_from_impl(gs, pile, lane, player);
+		var result = game_state_draw_from_impl(gs, pile, lane, player);
 		
 		game_state_ensure_card_facing(gs);
 		
@@ -891,15 +912,18 @@ function mainfunc(context, args)
 	function game_state_process_trap_cards(gs, my_stack, other_stack, discard)
 	{
 		///copy
-		let traps = card_list_get_of_type(my_stack, value_t["TRAP"]);
+		var traps = card_list_get_of_type(my_stack, value_t["TRAP"]);
 		
-		for(let c of traps.cards)
+		//for(var c of traps.cards)
+		for(var trap_num = 0; trap_num < traps.cards.length; trap_num++)
 		{
+			var c = traps.cards[trap_num];
+			
 			if(c.face_down)
 			{
 				c.face_down = false;
 				
-				let taken = card_list_take_top_card(discard, other_stack);
+				var taken = card_list_take_top_card(discard, other_stack);
 				
 				if(taken.ok)
 				{
@@ -911,17 +935,17 @@ function mainfunc(context, args)
 	
 	function game_state_trigger_combat(gs, who_triggered, lane)
 	{
-		let attacker_stack = game_state_get_cards(gs, piles["ATTACKER_STACK"], lane);
-		let defender_stack = game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
+		var attacker_stack = game_state_get_cards(gs, piles["ATTACKER_STACK"], lane);
+		var defender_stack = game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
 		
 		defender_stack.face_up = true;
 		
-		let attacker_discard = game_state_get_cards(gs, piles["ATTACKER_DISCARD"], -1);
-		let lane_discard = game_state_get_cards(gs, piles["LANE_DISCARD"], lane);
+		var attacker_discard = game_state_get_cards(gs, piles["ATTACKER_DISCARD"], -1);
+		var lane_discard = game_state_get_cards(gs, piles["LANE_DISCARD"], lane);
 		
-		let lane_deck = game_state_get_cards(gs, piles["LANE_DECK"], lane);
+		var lane_deck = game_state_get_cards(gs, piles["LANE_DECK"], lane);
 		
-		let attacker_hand = game_state_get_cards(gs, piles["ATTACKER_HAND"], -1);
+		var attacker_hand = game_state_get_cards(gs, piles["ATTACKER_HAND"], -1);
 				
 		if(who_triggered == player_t["ATTACKER"])
 		{				
@@ -937,31 +961,37 @@ function mainfunc(context, args)
 		}
 		
 		
-		let should_bounce = false;
+		var should_bounce = false;
 		
-		let attacker_bounce = card_list_get_of_type(attacker_stack, value_t["BOUNCE"]);
-		let defender_bounce = card_list_get_of_type(defender_stack, value_t["BOUNCE"]);
+		var attacker_bounce = card_list_get_of_type(attacker_stack, value_t["BOUNCE"]);
+		var defender_bounce = card_list_get_of_type(defender_stack, value_t["BOUNCE"]);
 		
 		if(attacker_bounce.cards.length > 0 || defender_bounce.cards.length > 0)
 		{
 			should_bounce = true;
 		}
 		
-		for(let c of attacker_stack.cards)
+		//for(var c of attacker_stack.cards)
+		for(var attacker_facedown_id = 0; attacker_facedown_id < attacker_stack.cards.length; attacker_facedown_id++)
 		{
+			var c = attacker_stack.cards[attacker_facedown_id];
+			
 			c.face_down = false;
 		}
 		
-		for(let c of defender_stack.cards)
+		//for(var c of defender_stack.cards)
+		for(var defender_facedown_id = 0; defender_facedown_id < defender_stack.cards.length; defender_facedown_id++)
 		{
+			var c = defender_stack.cards[defender_facedown_id];
+			
 			c.face_down = false;
 		}
 		
 		card_list_steal_all_of(attacker_stack, defender_stack, value_t["BOUNCE"]);
 		card_list_steal_all_of(lane_discard, attacker_stack, value_t["BOUNCE"]);
 		
-		let attacker_damage = card_list_calculate_stack_damage(attacker_stack);
-		let defender_damage = card_list_calculate_stack_damage(defender_stack);
+		var attacker_damage = card_list_calculate_stack_damage(attacker_stack);
+		var defender_damage = card_list_calculate_stack_damage(defender_stack);
 		
 		if(attacker_damage == 0 && defender_damage == 0)
 		{
@@ -981,18 +1011,18 @@ function mainfunc(context, args)
 			return {ok:true};
 		}
 		
-		let modify_combat_rules = card_list_get_of_type(attacker_stack, value_t["BREAK"]).cards.length > 0;
+		var modify_combat_rules = card_list_get_of_type(attacker_stack, value_t["BREAK"]).cards.length > 0;
 		
-		let damage = (attacker_damage - defender_damage) + 1;
+		var damage = (attacker_damage - defender_damage) + 1;
 		
 		if(modify_combat_rules)
 		{
 			damage = attacker_damage;
 		}
 		
-		for(let cur_d = damage; cur_d > 0; cur_d--)
+		for(var cur_d = damage; cur_d > 0; cur_d--)
 		{
-			let cards_left = defender_stack.cards.length > 0;
+			var cards_left = defender_stack.cards.length > 0;
 			
 			if(cards_left)
 			{
@@ -1000,7 +1030,7 @@ function mainfunc(context, args)
 				continue;
 			}
 			
-			let lane_cards_exist = lane_deck.cards.length > 0;
+			var lane_cards_exist = lane_deck.cards.length > 0;
 			
 			if(lane_cards_exist)
 			{
@@ -1008,7 +1038,7 @@ function mainfunc(context, args)
 				continue;
 			}
 			
-			let lane_discard_exists = lane_discard.cards.length > 0;
+			var lane_discard_exists = lane_discard.cards.length > 0;
 			
 			if(lane_discard_exists)
 			{
@@ -1031,13 +1061,13 @@ function mainfunc(context, args)
 		{
 			to_play.face_down = false;
 			
-			let is_face_down = card_list_is_face_down(appropriate_stack) || appropriate_stack.cards.length == 0;
+			var is_face_down = card_list_is_face_down(appropriate_stack) || appropriate_stack.cards.length == 0;
 			
 			card_list_add_face_up_card(appropriate_stack, to_play);
 			
 			if(is_face_down)
 			{				
-				let did_win = game_state_trigger_combat(gs, player, lane);
+				var did_win = game_state_trigger_combat(gs, player, lane);
 				
 				return {ok:true, win:did_win.win}
 			}
@@ -1062,16 +1092,16 @@ function mainfunc(context, args)
 		if(lane < 0 || lane >= num_lanes)
 			return {ok:false}
 		
-		let hand = game_state_get_hand(gs, player);
+		var hand = game_state_get_hand(gs, player);
 
 		if(card_offset < 0 || card_offset >= hand.cards.length)
 			return {ok:false};
 		
-		let to_play = hand.cards[card_offset];
+		var to_play = hand.cards[card_offset];
 		
-		let appropriate_stack = game_state_get_lane_stack_for_player(gs, player, lane);
+		var appropriate_stack = game_state_get_lane_stack_for_player(gs, player, lane);
 		
-		let play_state = game_state_play_card_on_stack(gs, player, to_play, appropriate_stack, face_up, lane);
+		var play_state = game_state_play_card_on_stack(gs, player, to_play, appropriate_stack, face_up, lane);
 			
 		if(play_state.ok)
 		{
@@ -1086,12 +1116,12 @@ function mainfunc(context, args)
 		if(lane < 0 || lane >= num_lanes)
 			return {ok:false};
 		
-		let cards = game_state_get_lane_stack_for_player(gs, player, lane);
+		var cards = game_state_get_lane_stack_for_player(gs, player, lane);
 		
 		if(cards.cards.length == 0)
 			return {ok:false};
 		
-		let play_state = game_state_trigger_combat(gs, player, lane);
+		var play_state = game_state_trigger_combat(gs, player, lane);
 		
 		return play_state;
 	}
@@ -1101,14 +1131,14 @@ function mainfunc(context, args)
 		if(lane < 0 || lane >= num_lanes)
 			return {ok:false};
 		
-		let lane_discard = game_state_get_cards(piles["LANE_DISCARD"], lane);
+		var lane_discard = game_state_get_cards(piles["LANE_DISCARD"], lane);
 		
-		let hand = game_state_get_cards(piles["DEFENDER_HAND"], lane);
+		var hand = game_state_get_cards(piles["DEFENDER_HAND"], lane);
 		
 		if(card_offset < 0 || card_offset >= hand.cards.length)
 			return {ok:false};
 		
-		let c = hand.cards[card_offset];
+		var c = hand.cards[card_offset];
 		
 		card_list_remove_card(hand, c);
 		
@@ -1186,20 +1216,20 @@ function mainfunc(context, args)
 			#db.r({game_id:game_id});
 		}
 		
-		// for(let i=0; i < piles["COUNT"]; i++)
+		// for(var i=0; i < piles["COUNT"]; i++)
 		// {
 			// if(piles_is_lane_type(i))
 			// {
-				// for(let lane = 0; lane < 6; lane++)
+				// for(var lane = 0; lane < 6; lane++)
 				// {
-					// let cards = game_state_get_cards(gs, i, lane);				
+					// var cards = game_state_get_cards(gs, i, lane);				
 					
 					// #db.i({game_id:game_id, pile:i, lane:lane, data:cards});
 				// }
 			// }
 			// else
 			// {
-				// let cards = game_state_get_cards(gs, i, -1);
+				// var cards = game_state_get_cards(gs, i, -1);
 				
 				// #db.i({game_id:game_id, pile:i, lane:-1, data:cards});
 			// }
@@ -1213,22 +1243,22 @@ function mainfunc(context, args)
 		if(!game_exists_in_db(game_id))
 			return null;
 		
-		let gs = game_state_make();
+		var gs = game_state_make();
 				
-		// for(let i=0; i < piles["COUNT"]; i++)
+		// for(var i=0; i < piles["COUNT"]; i++)
 		// {
 			// if(piles_is_lane_type(i))
 			// {
-				// for(let lane = 0; lane < 6; lane++)
+				// for(var lane = 0; lane < 6; lane++)
 				// {					
-					// let cards = #db.f({game_id:game_id, pile:i, lane:lane}).first().data;
+					// var cards = #db.f({game_id:game_id, pile:i, lane:lane}).first().data;
 					
 					// game_state_reseat_cards(gs, i, lane, cards);
 				// }
 			// }
 			// else
 			// {
-				// let cards = #db.f({game_id:game_id, pile:i, lane:-1}).first().data;
+				// var cards = #db.f({game_id:game_id, pile:i, lane:-1}).first().data;
 				
 				// game_state_reseat_cards(gs, i, -1, cards);
 			// }
