@@ -786,7 +786,7 @@ struct game_state
 
         bool is_face_up = duk_get_boolean(sd.ctx, -1);
 
-        std::cout << "fup " << is_face_up << std::endl;
+        //std::cout << "fup " << is_face_up << std::endl;
 
         arg_idx cards_id = sd.get_prop_string(card_list_id, "cards");
 
@@ -807,10 +807,15 @@ struct game_state
 
             c->face_down = sd.get_boolean(face_down_id);
 
+            sd.pop_n(4);
+
             ret.cards.push_back(c);
         }
 
+        sd.pop_n(2);
+
         ret.javascript_id = card_list_id;
+        ret.face_up = is_face_up;
 
         return ret;
     }
@@ -821,13 +826,9 @@ struct game_state
 
         int turns = duk_get_int(sd.ctx, -1);
 
-        std::vector<card_list> to_process;
-
         arg_idx piles_id = sd.get_prop_string(gs_id, "piles");
 
         int num_piles = sd.get_length(piles_id);
-
-        printf("npiles %i\n", num_piles);
 
         assert(num_piles == 4);
 

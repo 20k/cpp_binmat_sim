@@ -165,7 +165,7 @@ struct stack_duk
 
     int get_length(arg_idx offset)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
 
         return duk_get_length(ctx, foffset);
     }
@@ -177,21 +177,21 @@ struct stack_duk
 
     int get_int(arg_idx offset)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
 
         return duk_get_int(ctx, foffset);
     }
 
     bool get_boolean(arg_idx offset)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
 
         return duk_get_boolean(ctx, foffset);
     }
 
     std::string get_string(arg_idx offset)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
 
         return duk_get_string(ctx, foffset);
     }
