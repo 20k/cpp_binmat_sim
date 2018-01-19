@@ -860,7 +860,7 @@ struct game_state : serialisable
     {
         arg_idx turns_id = sd.get_prop_string(gs_id, "turn");
 
-        int turns = duk_get_int(sd.ctx, -1);
+        turn = duk_get_int(sd.ctx, -1);
 
         arg_idx piles_id = sd.get_prop_string(gs_id, "piles");
 
@@ -915,9 +915,33 @@ struct game_state : serialisable
         sd.pop_n(1);
     }
 
+    bool attacker_turn(stack_duk& sd, arg_idx gs_id)
+    {
+        arg_idx id = call_function_from_absolute(sd, "is_attacker_turn", gs_id);
+
+        bool valid = sd.get_boolean(id);
+
+        sd.pop_n(1);
+
+        return valid;
+    }
+
+    bool defender_turn(stack_duk& sd, arg_idx gs_id)
+    {
+        arg_idx id = call_function_from_absolute(sd, "is_defender_turn", gs_id);
+
+        bool valid = sd.get_boolean(id);
+
+        sd.pop_n(1);
+
+        return valid;
+    }
+
     void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, card& c, int card_list_face_up)
     {
         call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)c.card_type, (int)c.suit_type, (bool)c.face_down, (bool)card_list_face_up);
+
+        sd.pop_n(1);
     }
 
     void propagate_lane_decks_to_js(stack_duk& sd, arg_idx gs_id)
@@ -1022,6 +1046,8 @@ struct command : serialisable
         {
             call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
         }
+
+        call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
     }
 
     virtual void do_serialise(serialise& s, bool ser)
@@ -1079,7 +1105,7 @@ struct command_manager : serialisable
 };
 
 ///hmm. Maybe instead of networking state we should just network commands
-void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands)
+void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state)
 {
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -1119,87 +1145,93 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands)
 
     ImGui::End();
 
-    ImGui::Begin("Attacker Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
     bool update = false;
 
-    if(ImGui::Button("Draw from Lane Deck"))
+    if((player == game_state::ATTACKER && basic_state.attacker_turn(sd, gs_id)) || player == game_state::OVERLORD)
     {
-        //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
+        ImGui::Begin("Attacker Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        to_exec.to_exec = command::ATTACK_DRAW_LANE;
-        to_exec.pile = piles::LANE_DECK;
-        to_exec.player = game_state::ATTACKER;
+        if(ImGui::Button("Draw from Lane Deck"))
+        {
+            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
 
-        update = true;
+            to_exec.to_exec = command::ATTACK_DRAW_LANE;
+            to_exec.pile = piles::LANE_DECK;
+            to_exec.player = game_state::ATTACKER;
+
+            update = true;
+        }
+
+        if(ImGui::Button("Draw From Attacker Deck"))
+        {
+            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
+
+            to_exec.to_exec = command::ATTACK_DRAW_DECK;
+            to_exec.pile = piles::ATTACKER_DECK;
+            to_exec.player = game_state::ATTACKER;
+
+            update = true;
+        }
+
+        if(ImGui::Button("Play to Stack"))
+        {
+            //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+
+            to_exec.to_exec = command::ATTACK_PLAY_STACK;
+            to_exec.player = game_state::ATTACKER;
+
+            update = true;
+        }
+
+        if(ImGui::Button("Initiate Combat At Lane"))
+        {
+            //call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
+
+            to_exec.to_exec = command::ATTACK_INITIATE_COMBAT;
+            to_exec.player = game_state::ATTACKER;
+
+            update = true;
+        }
+
+        ImGui::End();
     }
 
-    if(ImGui::Button("Draw From Attacker Deck"))
+    if((player == game_state::DEFENDER && basic_state.defender_turn(sd, gs_id)) || player == game_state::OVERLORD)
     {
-        //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
+        ImGui::Begin("Defender Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        to_exec.to_exec = command::ATTACK_DRAW_DECK;
-        to_exec.pile = piles::ATTACKER_DECK;
-        to_exec.player = game_state::ATTACKER;
+        if(ImGui::Button("Draw From Lane Deck"))
+        {
+            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
 
-        update = true;
+            to_exec.to_exec = command::DEFENDER_DRAW_LANE;
+            to_exec.pile = piles::LANE_DECK;
+            to_exec.player = game_state::DEFENDER;
+
+            update = true;
+        }
+
+        if(ImGui::Button("Play to Stack"))
+        {
+            //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+
+            to_exec.to_exec = command::DEFENDER_PLAY_STACK;
+            to_exec.player = game_state::DEFENDER;
+
+            update = true;
+        }
+
+        if(ImGui::Button("Discard Card to Lane Discard Pile"))
+        {
+            //call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
+
+            to_exec.to_exec = command::DEFENDER_DISCARD_TO;
+
+            update = true;
+        }
+
+        ImGui::End();
     }
-
-    if(ImGui::Button("Play to Stack"))
-    {
-        //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
-
-        to_exec.to_exec = command::ATTACK_PLAY_STACK;
-        to_exec.player = game_state::ATTACKER;
-
-        update = true;
-    }
-
-    if(ImGui::Button("Initiate Combat At Lane"))
-    {
-        //call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
-
-        to_exec.to_exec = command::ATTACK_INITIATE_COMBAT;
-        to_exec.player = game_state::ATTACKER;
-
-        update = true;
-    }
-
-    ImGui::End();
-
-    ImGui::Begin("Defender Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-    if(ImGui::Button("Draw From Lane Deck"))
-    {
-        //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
-
-        to_exec.to_exec = command::DEFENDER_DRAW_LANE;
-        to_exec.pile = piles::LANE_DECK;
-        to_exec.player = game_state::DEFENDER;
-
-        update = true;
-    }
-
-    if(ImGui::Button("Play to Stack"))
-    {
-        //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
-
-        to_exec.to_exec = command::DEFENDER_PLAY_STACK;
-        to_exec.player = game_state::DEFENDER;
-
-        update = true;
-    }
-
-    if(ImGui::Button("Discard Card to Lane Discard Pile"))
-    {
-        //call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
-
-        to_exec.to_exec = command::DEFENDER_DISCARD_TO;
-
-        update = true;
-    }
-
-    ImGui::End();
 
     if(update)
     {
@@ -1316,7 +1348,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        do_ui(sd, gs_id, commands);
+        do_ui(sd, gs_id, commands, current_player, basic_state);
 
         commands.network(net_state);
         commands.exec_all(sd, gs_id);

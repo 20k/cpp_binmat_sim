@@ -1194,6 +1194,11 @@ function(context, args)
 		card.card_type = type;
 	}
 
+	function game_state_inc_turn(gs)
+	{
+        gs.turn = gs.turn + 1;
+	}
+
 	return {
 			card_manager_make:card_manager_make,
 			game_state_make:game_state_make,
@@ -1214,6 +1219,8 @@ function(context, args)
 
 			get_string:get_string,
 			debug:debug,
+
+			game_state_inc_turn:game_state_inc_turn,
 
 			game_state_set_card:game_state_set_card,
 
