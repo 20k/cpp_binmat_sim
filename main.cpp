@@ -8,7 +8,7 @@
 #include "manager.hpp"
 #include <math.h>
 #include "font_renderer.hpp"
-#include "network_updater.hpp"
+//#include "network_updater.hpp"
 #include "../4space_server/networking.hpp"
 
 #define CARD_WIDTH 25
@@ -1037,6 +1037,13 @@ int main(int argc, char* argv[])
     stack_duk sd;
     init_js_interop(sd);
 
+    networking_init();
+    network_state net_state;
+    net_state.reliable_ordered.init_client();
+    net_state.try_join = true;
+
+    update_strategy card_updater;
+
     tests();
 
     sf::RenderWindow window;
@@ -1082,6 +1089,7 @@ int main(int argc, char* argv[])
     game_state::player_t current_player = game_state::SPECTATOR;
 
     game_state basic_state;
+    basic_state.explicit_register();
 
     while(window.isOpen())
     {
@@ -1175,6 +1183,92 @@ int main(int argc, char* argv[])
         }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
+
+        net_state.tick(diff_s);
+
+        ///if turn taken, do network updater
+
+        if(net_state.connected())
+        {
+            for(network_data& i : net_state.available_data)
+            {
+                if(i.processed)
+                    continue;
+
+                int32_t internal_counter = i.data.internal_counter;
+
+                int32_t send_mode = 0;
+
+                i.data.handle_serialise(send_mode, false);
+
+                serialise_data_helper::send_mode = send_mode;
+
+                if(send_mode != 1)
+                {
+                    serialise_host_type host_id;
+
+                    i.data.handle_serialise(host_id, false);
+
+                    serialise_data_helper::ref_mode = 0;
+
+                    serialisable* found_s = net_state.get_serialisable(host_id, i.object.serialise_id);
+
+                    if(found_s == nullptr)
+                    {
+                        i.set_complete();
+                        continue;
+                    }
+
+                    i.data.force_serialise(found_s, false);
+                }
+
+                if(send_mode == 1)
+                {
+                    serialisable::reset_network_state();
+
+                    serialise_data_helper::ref_mode = 1;
+
+                    std::cout << "got full gamestate" << std::endl;
+
+                    serialise ser = i.data;
+
+                    basic_state.explicit_register();
+
+                    ser.handle_serialise_no_clear(basic_state, false);
+
+                }
+
+                i.set_complete();
+
+                //handle_unprocessed();
+            }
+        }
+
+        ImGui::Begin("Networking");
+
+        if(ImGui::Button("Massive") && net_state.connected())
+        {
+            serialisable::reset_network_state();
+
+            serialise_data_helper::send_mode = 1;
+            serialise_data_helper::ref_mode = 1;
+
+            basic_state.explicit_register();
+
+            serialise ser;
+            ser.default_owner = net_state.my_id;
+
+            ser.handle_serialise(serialise_data_helper::send_mode, true);
+
+            ser.handle_serialise_no_clear(basic_state, true);
+
+            network_object no_test;
+            no_test.serialise_id = -2;
+
+            net_state.forward_data(no_test, ser);
+        }
+
+        ImGui::End();
 
         if(tooltip::current.size() > 0)
             ImGui::SetTooltip(tooltip::current.c_str());
