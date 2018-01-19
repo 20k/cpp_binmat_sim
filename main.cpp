@@ -820,6 +820,8 @@ struct game_state
         return ret;
     }
 
+    int turn = 0;
+
     void import_state_from_js(stack_duk& sd, arg_idx gs_id)
     {
         arg_idx turns_id = sd.get_prop_string(gs_id, "turn");
@@ -832,7 +834,7 @@ struct game_state
 
         assert(num_piles == 4);
 
-        for(int i=0; i < 4; i++)
+        for(int i=0; i < num_piles; i++)
         {
             arg_idx card_list_id = sd.get_prop_index(piles_id, i);
 
@@ -842,6 +844,39 @@ struct game_state
         }
 
         sd.pop_n(2);
+
+        arg_idx lanes_id = sd.get_prop_string(gs_id, "lanes");
+
+        int found_lanes = sd.get_length(lanes_id);
+
+        assert(found_lanes == 6);
+
+        printf("flane\n");
+
+        for(int i=0; i < found_lanes; i++)
+        {
+            arg_idx specific_lane = sd.get_prop_index(lanes_id, i);
+
+            arg_idx card_list_id = sd.get_prop_string(specific_lane, "card_piles");
+
+            int num_in_lane = sd.get_length(card_list_id);
+
+            printf("nlane %i\n", num_in_lane);
+
+            assert(num_in_lane == 4);
+
+            for(int kk=0; kk < num_in_lane; kk++)
+            {
+
+            }
+
+            sd.pop_n(2);
+
+        }
+
+        sd.pop_n(1);
+
+        //sd.pop_n(3);
     }
 };
 

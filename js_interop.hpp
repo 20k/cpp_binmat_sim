@@ -147,14 +147,18 @@ struct stack_duk
 
     arg_idx get_prop_string(arg_idx offset, const std::string& name)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
+
+        printf("ps %i\n", foffset);
 
         return get_prop_string(foffset, name);
     }
 
     arg_idx get_prop_index(arg_idx offset, int index)
     {
-        int foffset = offset.val - stack_val - 1;
+        int foffset = offset.val - stack_val;
+
+        printf("PIDX %i\n", foffset);
 
         duk_get_prop_index(ctx, foffset, index);
 
@@ -166,6 +170,8 @@ struct stack_duk
     int get_length(arg_idx offset)
     {
         int foffset = offset.val - stack_val;
+
+        printf("fo %i\n", foffset);
 
         return duk_get_length(ctx, foffset);
     }
@@ -198,7 +204,7 @@ struct stack_duk
 
     arg_idx dup_absolute(int absolute_value)
     {
-        int diff = absolute_value - stack_val - 1;
+        int diff = absolute_value - stack_val;
 
         duk_dup(ctx, diff);
 
@@ -220,7 +226,9 @@ arg_idx call_global_function(stack_duk& sd, const std::string& name)
 
     sd.load();
 
-    return sd.inc();
+    sd.inc();
+
+    return arg_idx(sd.stack_val-1);
 }
 
 arg_idx call_implicit_function(stack_duk& sd, const std::string& name)
@@ -233,7 +241,9 @@ arg_idx call_implicit_function(stack_duk& sd, const std::string& name)
     sd.call(0);
     sd.load();
 
-    return sd.inc();
+    sd.inc();
+
+    return arg_idx(sd.stack_val-1);
 }
 
 void push_arg(stack_duk& sd, const std::string& s)
@@ -294,7 +304,9 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
 
     sd.load();
 
-    return sd.inc();
+    sd.inc();
+
+    return arg_idx(sd.stack_val - 1);
 }
 
 void register_function(stack_duk& sd, const std::string& function_str, const std::string& function_name)
