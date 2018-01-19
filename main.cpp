@@ -1394,15 +1394,11 @@ int main(int argc, char* argv[])
 
                     serialisable* found_s = net_state.get_serialisable(host_id, i.object.serialise_id);
 
-                    printf("got\n");
-
                     if(found_s == nullptr)
                     {
                         i.set_complete();
                         continue;
                     }
-
-                    printf("did\n");
 
                     i.data.force_serialise(found_s, false);
                 }
