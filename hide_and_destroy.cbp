@@ -56,6 +56,10 @@
 			<Add library="C:/Users/James/Desktop/projects/binmat_game/libduktape.a" />
 			<Add library="C:/Users/James/Desktop/projects/binmat_game/libduktaped.a" />
 		</Linker>
+		<ExtraCommands>
+			<Add after="post_build.bat" />
+			<Mode after="always" />
+		</ExtraCommands>
 		<Unit filename="../serialise/serialise.cpp" />
 		<Unit filename="../serialise/serialise.hpp" />
 		<Unit filename="font_renderer.hpp" />

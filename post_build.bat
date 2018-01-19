@@ -1,0 +1,1 @@
+copy "binmat_sim.js" "C:\\Users\\James\\AppData\\Roaming\\hackmud\\i20k\\scripts"
