@@ -54,6 +54,16 @@ void debug_stack(duk_context* ctx)
     duk_pop_n(ctx, 1);
 }
 
+struct arg_idx
+{
+    int val = 0;
+
+    arg_idx(int v)
+    {
+        val = v;
+    }
+};
+
 struct stack_duk
 {
     int stack_val = 0;
@@ -77,7 +87,7 @@ struct stack_duk
         return function_implicit_call_point - stack_val - 1;
     }
 
-    int load()
+    arg_idx load()
     {
         stack_val = saved.back();
 
@@ -86,7 +96,7 @@ struct stack_duk
         return stack_val;
     }
 
-    int inc()
+    arg_idx inc()
     {
         stack_val++;
 
@@ -99,42 +109,60 @@ struct stack_duk
         stack_val -= n;
     }
 
-    int push_global_object()
+    arg_idx push_global_object()
     {
         duk_push_global_object(ctx);
 
-        stack_val++;
+        inc();
 
         return stack_val-1;
     }
 
-    int get_prop_string(int offset, const std::string& name)
+    arg_idx push_string(const std::string& s)
+    {
+        duk_push_string(ctx, s.c_str());
+
+        inc();
+
+        return stack_val-1;
+    }
+
+    arg_idx push_int(int v)
+    {
+        duk_push_int(ctx, v);
+
+        inc();
+
+        return stack_val-1;
+    }
+
+    arg_idx get_prop_string(int offset, const std::string& name)
     {
         duk_get_prop_string(ctx, offset, name.c_str());
 
-        stack_val++;
+        inc();
 
         return stack_val-1;
     }
 
-    int call(int args)
+    void call(int args)
     {
         duk_call(ctx, args);
     }
 
-    int dup_absolute(int absolute_value)
+    arg_idx dup_absolute(int absolute_value)
     {
         int diff = absolute_value - stack_val - 1;
 
         duk_dup(ctx, diff);
 
-        stack_val++;
+        inc();
 
         return stack_val-1;
     }
 };
 
-int call_global_function(stack_duk& sd, const std::string& name)
+arg_idx call_global_function(stack_duk& sd, const std::string& name)
 {
     sd.save();
 
@@ -149,7 +177,7 @@ int call_global_function(stack_duk& sd, const std::string& name)
     return sd.inc();
 }
 
-int call_implicit_function(stack_duk& sd, const std::string& name)
+arg_idx call_implicit_function(stack_duk& sd, const std::string& name)
 {
     //duk_get_prop_string(ctx, -1, name.c_str());
     //duk_call(ctx, 0);
@@ -162,25 +190,52 @@ int call_implicit_function(stack_duk& sd, const std::string& name)
     return sd.inc();
 }
 
-int call_function_from_absolute(stack_duk& sd, const std::string& name, std::vector<int> arg_offsets = std::vector<int>())
+void push_arg(stack_duk& sd, const std::string& s)
+{
+    sd.push_string(s);
+}
+
+void push_arg(stack_duk& sd, int s)
+{
+    sd.push_int(s);
+}
+
+void push_arg(stack_duk& sd, arg_idx s)
+{
+    sd.dup_absolute(s.val);
+}
+
+template<typename T, typename... U>
+void set_arg(stack_duk& sd, T t, U... u)
+{
+    push_arg(sd, std::forward<T>(t));
+    set_arg(sd, std::forward<U>(u)...);
+}
+
+void set_arg(stack_duk& sd)
+{
+
+}
+
+template<typename... T>
+void set_args(stack_duk& sd, T... t)
+{
+    set_arg(sd, std::forward<T>(t)...);
+}
+
+template<typename... T>
+arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T... arg_offsets)
 {
     sd.save();
     sd.get_prop_string(sd.get_function_offset(), name);
 
     //duk_get_prop_string(ctx, offset, name.c_str());
 
-    int running_bump = 1;
+    set_args(sd, arg_offsets...);
 
-    for(int& v : arg_offsets)
-    {
-        //duk_dup(sd.ctx, v - running_bump);
+    int len = sizeof...(arg_offsets);
 
-        sd.dup_absolute(v);
-
-        running_bump++;
-    }
-
-    int ret = duk_pcall(sd.ctx, arg_offsets.size());
+    int ret = duk_pcall(sd.ctx, len);
 
     if(ret != DUK_EXEC_SUCCESS)
     {
