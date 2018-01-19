@@ -82,6 +82,11 @@ struct card : basic_entity
 
     value_t card_type = value_t::TWO;
 
+    bool operator==(card& other)
+    {
+        return suit_type == other.suit_type && card_type == other.card_type;
+    }
+
     void set_card_from_offsets(int suit_offset, int card_offset)
     {
         assert(suit_offset >= 0 && suit_offset < COUNT_SUIT);
@@ -198,19 +203,19 @@ struct card_manager : manager<card>
         {
             for(int card_offset = 0; card_offset < 13; card_offset++)
             {
-                card* c = make_new();
+                card c;
 
-                c->set_card_from_offsets(suit_offset, card_offset);
+                c.set_card_from_offsets(suit_offset, card_offset);
             }
         }
     }
 
     int card_fetch_counter = 0;
 
-    card* fetch_without_replacement()
+    /*card& fetch_without_replacement()
     {
         return elems[card_fetch_counter++];
-    }
+    }*/
 
     void reset_fetching()
     {
@@ -218,7 +223,7 @@ struct card_manager : manager<card>
     }
 };
 
-void shuffle_cards(std::vector<card*>& cards)
+void shuffle_cards(std::vector<card>& cards)
 {
     std::random_device rd;
     std::mt19937 g(rd());
@@ -254,7 +259,7 @@ int do_wild_roundup(int sum)
 struct card_list
 {
     ///left is bottom, right is top
-    std::vector<card*> cards;
+    std::vector<card> cards;
 
     bool face_up = false;
 
@@ -279,9 +284,9 @@ struct card_list
     {
         card_list ret;
 
-        for(card* c : cards)
+        for(card& c : cards)
         {
-            if(c->is_type(type))
+            if(c.is_type(type))
             {
                 ret.cards.push_back(c);
             }
@@ -290,7 +295,7 @@ struct card_list
         return ret;
     }
 
-    bool add_face_down_card(card* c)
+    bool add_face_down_card(card& c)
     {
         if(cards.size() == 0)
         {
@@ -303,7 +308,7 @@ struct card_list
         cards.push_back(c);
     }
 
-    void add_face_up_card(card* c)
+    void add_face_up_card(card& c)
     {
         face_up = true;
 
@@ -314,19 +319,19 @@ struct card_list
     {
         int sum = 0;
 
-        for(card* c : cards)
+        for(card& c : cards)
         {
-            if(c->is_modifier())
+            if(c.is_modifier())
                 continue;
 
-            sum += c->get_value();
+            sum += c.get_value();
         }
 
         int powers_to_bump_up = 0;
 
-        for(card* c : cards)
+        for(card& c : cards)
         {
-            if(c->is_type(card::WILD))
+            if(c.is_type(card::WILD))
             {
                 powers_to_bump_up++;
             }
@@ -354,7 +359,7 @@ struct card_list
     {
         for(int i=0; i < cards.size(); i++)
         {
-            if(!cards[i]->is_face_up())
+            if(!cards[i].is_face_up())
             {
                 cards.erase(cards.begin() + i);
                 i--;
@@ -375,14 +380,14 @@ struct card_list
         return ncl;
     }
 
-    std::optional<card*> take_top_card(card_list& other)
+    std::optional<card> take_top_card(card_list& other)
     {
         if(other.cards.size() == 0)
         {
             return std::nullopt;
         }
 
-        card* c = other.cards.back();
+        card& c = other.cards.back();
 
         other.cards.pop_back();
 
@@ -405,7 +410,7 @@ struct card_list
         return true;
     }
 
-    bool remove_card(card* c)
+    bool remove_card(card& c)
     {
         for(int i=0; i < cards.size(); i++)
         {
@@ -421,9 +426,9 @@ struct card_list
 
     bool contains(card::value_t type)
     {
-        for(card* c : cards)
+        for(card& c : cards)
         {
-            if(c->is_type(type))
+            if(c.is_type(type))
                 return true;
         }
 
@@ -432,7 +437,7 @@ struct card_list
 
     void steal_all(card_list& other)
     {
-        for(card* c : other.cards)
+        for(card& c : other.cards)
         {
             cards.push_back(c);
         }
@@ -444,7 +449,7 @@ struct card_list
     {
         for(int i=0; i < other.cards.size(); i++)
         {
-            if(other.cards[i]->is_type(type))
+            if(other.cards[i].is_type(type))
             {
                 cards.push_back(other.cards[i]);
 
@@ -551,9 +556,9 @@ struct game_state
             card_list ret = cards;
             ret.cards.clear();
 
-            for(card* c : cards.cards)
+            for(card& c : cards.cards)
             {
-                if(c->is_face_up())
+                if(c.is_face_up())
                 {
                     ret.cards.push_back(c);
                 }
@@ -659,11 +664,11 @@ struct game_state
     }
 
 
-    bool is_visible(card* check, piles::piles_t pile, player_t player, int lane)
+    bool is_visible(card& check, piles::piles_t pile, player_t player, int lane)
     {
         card_list visible_cards = get_visible_pile_cards_as(pile, player, lane);
 
-        for(card* c : visible_cards.cards)
+        for(card& c : visible_cards.cards)
         {
             if(c == check)
                 return true;
@@ -680,17 +685,17 @@ struct game_state
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        for(card* c : current_deck.cards)
+        for(card& c : current_deck.cards)
         {
-            c->info.pos = {lane_x, centre.y() + yoffset};
+            c.info.pos = {lane_x, centre.y() + yoffset};
 
             if(is_visible(c, pile, player, cnum))
             {
-                c->render_face_up(win);
+                c.render_face_up(win);
             }
             else
             {
-                c->render_face_down(win);
+                c.render_face_down(win);
             }
         }
 
@@ -710,17 +715,17 @@ struct game_state
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        card* c = current_deck.cards[cnum];
+        card& c = current_deck.cards[cnum];
 
-        c->info.pos = {lane_x, centre.y() + yoffset};
+        c.info.pos = {lane_x, centre.y() + yoffset};
 
         if(is_visible(c, pile, player, cnum))
         {
-            c->render_face_up(win);
+            c.render_face_up(win);
         }
         else
         {
-            c->render_face_down(win);
+            c.render_face_down(win);
         }
     }
 
@@ -792,7 +797,7 @@ struct game_state
 
         for(int kk=0; kk < array_length; kk++)
         {
-            card* c = new card;
+            card c;
 
             arg_idx card_id = sd.get_prop_index(cards_id, kk);
 
@@ -800,10 +805,10 @@ struct game_state
             arg_idx suit_type_id = sd.get_prop_string(card_id, "suit_type");
             arg_idx card_type_id = sd.get_prop_string(card_id, "card_type");
 
-            c->suit_type = (card::suit_t)sd.get_int(suit_type_id);
-            c->card_type = (card::value_t)sd.get_int(card_type_id);
+            c.suit_type = (card::suit_t)sd.get_int(suit_type_id);
+            c.card_type = (card::value_t)sd.get_int(card_type_id);
 
-            c->face_down = sd.get_boolean(face_down_id);
+            c.face_down = sd.get_boolean(face_down_id);
 
             sd.pop_n(4);
 
@@ -1100,11 +1105,11 @@ int main(int argc, char* argv[])
 
         std::deque<std::string> reversed;
 
-        for(card* c : visible_to.cards)
+        for(card& c : visible_to.cards)
         {
-            if(c->is_within({mpos.x, mpos.y}))
+            if(c.is_within({mpos.x, mpos.y}))
             {
-                reversed.push_back(c->get_string());
+                reversed.push_back(c.get_string());
             }
         }
 
