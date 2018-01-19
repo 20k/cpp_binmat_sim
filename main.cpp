@@ -1331,7 +1331,7 @@ void tests()
     assert(do_wild_roundup(17) == 32);
 }
 
-void do_ui(game_state& current_game)
+void do_ui(stack_duk& sd, arg_idx gs_id)
 {
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -1373,22 +1373,30 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Draw from Lane Deck"))
     {
-        current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::ATTACKER);
+        //current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::ATTACKER);
+
+        call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
     }
 
     if(ImGui::Button("Draw From Attacker Deck"))
     {
-        current_game.draw_from(piles::ATTACKER_DECK, -1, game_state::ATTACKER);
+        //current_game.draw_from(piles::ATTACKER_DECK, -1, game_state::ATTACKER);
+
+        call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
     }
 
     if(ImGui::Button("Play to Stack"))
     {
-        current_game.play_to_stack_from_hand(game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+        //current_game.play_to_stack_from_hand(game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+
+        call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Initiate Combat At Lane"))
     {
-        current_game.try_trigger_combat(game_state::ATTACKER, lane_selected);
+        //current_game.try_trigger_combat(game_state::ATTACKER, lane_selected);
+
+        call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
     }
 
     ImGui::End();
@@ -1397,22 +1405,27 @@ void do_ui(game_state& current_game)
 
     if(ImGui::Button("Draw From Lane Deck"))
     {
-        current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::DEFENDER);
+        //current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::DEFENDER);
+
+        call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
     }
 
     if(ImGui::Button("Play to Stack"))
     {
-        current_game.play_to_stack_from_hand(game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+        //current_game.play_to_stack_from_hand(game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+
+        call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Discard Card to Lane Discard Pile"))
     {
-        current_game.discard_hand_to_lane_discard(lane_selected, hand_card_offset);
+        //current_game.discard_hand_to_lane_discard(lane_selected, hand_card_offset);
+
+        call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
     }
 
     ImGui::End();
 }
-
 
 ///dear future james:
 ///replace the entire game state class with just an int
@@ -1420,43 +1433,23 @@ void do_ui(game_state& current_game)
 ///replace all interactions with javascript interactions
 ///replace api between rendering functions and game state with js calls
 ///also remember to fix mainfunc
-void js_interop_test(const std::string& file)
+void init_js_interop(stack_duk& sd)
 {
-    stack_duk sd;
     sd.ctx = js_interop_startup();
 
-    std::string binmat_js = read_file(file);
+    std::string binmat_js = read_file("binmat_sim.js");
 
     register_function(sd, binmat_js, "mainfunc");
 
     call_global_function(sd, "mainfunc");
 
-    call_implicit_function(sd, "get_string");
-
-    std::cout << duk_get_string(sd.ctx, -1) << std::endl;
-
-    sd.pop_n(1);
-
     sd.save_function_call_point();
-
-    int gs = call_function_from_absolute(sd, "game_state_make");
-    int cm = call_function_from_absolute(sd, "card_manager_make");
-
-    printf("gs cm %i %i\n", gs, cm);
-
-    call_function_from_absolute(sd, "game_state_generate_new_game", {gs, cm});
-    ///does not return
-    ///so we can get it off the stack
-    sd.pop_n(1);
-
-    call_function_from_absolute(sd, "debug", {gs});
-
-	duk_destroy_heap(sd.ctx);
 }
 
 int main(int argc, char* argv[])
 {
-    js_interop_test("binmat_sim.js");
+    stack_duk sd;
+    init_js_interop(sd);
 
     tests();
 
@@ -1482,11 +1475,23 @@ int main(int argc, char* argv[])
 
     sf::Clock time;
 
-    card_manager all_cards;
+    arg_idx gs_id = call_function_from_absolute(sd, "game_state_make");
+    arg_idx cm_id = call_function_from_absolute(sd, "card_manager_make");
+
+    printf("gs cm %i %i\n", gs_id.val, cm_id.val);
+
+    call_function_from_absolute(sd, "game_state_generate_new_game", gs_id, cm_id);
+    ///does not return
+    ///so we can get it off the stack
+    sd.pop_n(1);
+
+    call_function_from_absolute(sd, "debug", gs_id);
+
+    /*card_manager all_cards;
     all_cards.generate_cards();
 
     game_state current_game;
-    current_game.generate_new_game(all_cards);
+    current_game.generate_new_game(all_cards);*/
 
     while(window.isOpen())
     {
@@ -1508,11 +1513,11 @@ int main(int argc, char* argv[])
             }
         }
 
-        do_ui(current_game);
+        do_ui(sd, gs_id);
 
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-            if(ImGui::Button("Attacker"))
+            /*if(ImGui::Button("Attacker"))
             {
                 current_game.set_viewer_state(game_state::ATTACKER);
             }
@@ -1530,12 +1535,12 @@ int main(int argc, char* argv[])
             if(ImGui::Button("Real State"))
             {
                 current_game.set_viewer_state(game_state::REAL_STATE);
-            }
+            }*/
 
         ImGui::End();
 
 
-        card_list visible_to = current_game.get_all_visible_cards(current_game.viewer);
+        /*card_list visible_to = current_game.get_all_visible_cards(current_game.viewer);
 
         sf::Mouse mouse;
         auto mpos = mouse.getPosition(window);
@@ -1561,9 +1566,9 @@ int main(int argc, char* argv[])
         for(auto& i : reversed)
         {
             tooltip::add(i);
-        }
+        }*/
 
-        current_game.render(window, current_game.viewer);
+        //current_game.render(window, current_game.viewer);
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 

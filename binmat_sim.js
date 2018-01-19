@@ -1131,9 +1131,9 @@ function mainfunc(context, args)
 		if(lane < 0 || lane >= num_lanes)
 			return {ok:false};
 
-		var lane_discard = game_state_get_cards(piles["LANE_DISCARD"], lane);
+		var lane_discard = game_state_get_cards(gs, piles["LANE_DISCARD"], lane);
 
-		var hand = game_state_get_cards(piles["DEFENDER_HAND"], lane);
+		var hand = game_state_get_cards(gs, piles["DEFENDER_HAND"], lane);
 
 		if(card_offset < 0 || card_offset >= hand.cards.length)
 			return {ok:false};
