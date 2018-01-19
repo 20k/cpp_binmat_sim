@@ -149,16 +149,12 @@ struct stack_duk
     {
         int foffset = offset.val - stack_val;
 
-        printf("ps %i\n", foffset);
-
         return get_prop_string(foffset, name);
     }
 
     arg_idx get_prop_index(arg_idx offset, int index)
     {
         int foffset = offset.val - stack_val;
-
-        printf("PIDX %i\n", foffset);
 
         duk_get_prop_index(ctx, foffset, index);
 
@@ -170,8 +166,6 @@ struct stack_duk
     int get_length(arg_idx offset)
     {
         int foffset = offset.val - stack_val;
-
-        printf("fo %i\n", foffset);
 
         return duk_get_length(ctx, foffset);
     }

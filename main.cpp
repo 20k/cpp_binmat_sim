@@ -838,7 +838,9 @@ struct game_state
         {
             arg_idx card_list_id = sd.get_prop_index(piles_id, i);
 
-            build(sd, card_list_id);
+            card_list found = build(sd, card_list_id);
+
+            piles[i] = found;
 
             sd.pop_n(1);
         }
@@ -851,8 +853,6 @@ struct game_state
 
         assert(found_lanes == 6);
 
-        printf("flane\n");
-
         for(int i=0; i < found_lanes; i++)
         {
             arg_idx specific_lane = sd.get_prop_index(lanes_id, i);
@@ -861,13 +861,17 @@ struct game_state
 
             int num_in_lane = sd.get_length(card_list_id);
 
-            printf("nlane %i\n", num_in_lane);
-
             assert(num_in_lane == 4);
 
             for(int kk=0; kk < num_in_lane; kk++)
             {
+                arg_idx specific_card_list = sd.get_prop_index(card_list_id, kk);
 
+                card_list found = build(sd, specific_card_list);
+
+                lanes[i].card_piles[kk] = found;
+
+                sd.pop_n(1);
             }
 
             sd.pop_n(2);

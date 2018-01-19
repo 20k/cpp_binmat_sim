@@ -841,21 +841,21 @@ function mainfunc(context, args)
         if(player == player_t["DEFENDER"])
         {
             if(pile == piles["LANE_DECK"])
-            {
+            {				
 				var success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
-
+				
                 if(!success)
                 {
 					success = card_list_shuffle_in(game_state_get_cards(gs, piles["LANE_DECK"], lane), game_state_get_cards(gs, piles["LANE_DISCARD"], lane))
-
-                    card_list_make_cards_face_down(game_state_get_cards(gs, piles["LANE_DECK"], -1));
-
+										
+                    card_list_make_cards_face_down(game_state_get_cards(gs, piles["LANE_DECK"], lane));
+					
                     if(success)
                     {
 						game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
 					}
                     else
-                    {
+                    {						
 						///attacker wins
                         return {ok:success, win:true}
                     }
@@ -874,11 +874,11 @@ function mainfunc(context, args)
 	{
 		if(lane < 0 || lane >= 6)
 			return {ok:false}
-
+		
 		var result = game_state_draw_from_impl(gs, pile, lane, player);
 
 		game_state_ensure_card_facing(gs);
-
+		
 		return result;
 	}
 
