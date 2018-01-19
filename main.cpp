@@ -933,8 +933,10 @@ void tests()
     assert(do_wild_roundup(17) == 32);
 }
 
-struct command
+struct command : serialisable
 {
+    bool cleanup = false;
+
     enum type
     {
         ATTACK_DRAW_LANE,
@@ -997,10 +999,63 @@ struct command
             call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
         }
     }
+
+    virtual void do_serialise(serialise& s, bool ser)
+    {
+        s.handle_serialise(to_exec, ser);
+        s.handle_serialise(pile, ser);
+        s.handle_serialise(lane_selected, ser);
+        s.handle_serialise(player, ser);
+        s.handle_serialise(is_faceup, ser);
+        s.handle_serialise(hand_card_offset, ser);
+    }
+};
+
+struct command_manager : serialisable
+{
+    bool cleanup = false;
+
+    std::vector<command> commands;
+
+    virtual void do_serialise(serialise& s, bool ser)
+    {
+        s.handle_serialise_no_clear(commands, ser);
+    }
+
+    void exec_all(stack_duk& sd, arg_idx gs_id)
+    {
+        for(command& c : commands)
+        {
+            c.execute(sd, gs_id);
+        }
+
+        commands.clear();
+    }
+
+    bool should_network = false;
+
+    void network(network_state& net_state)
+    {
+        if(!should_network)
+            return;
+
+        std::vector<command_manager*> me_hack;
+
+        update_strategy net_update;
+        net_update.do_update_strategy(1.f, 0.0, me_hack, net_state, 0);
+
+        should_network = false;
+    }
+
+    void add(command& c)
+    {
+        commands.push_back(c);
+        should_network = true;
+    }
 };
 
 ///hmm. Maybe instead of networking state we should just network commands
-void do_ui(stack_duk& sd, arg_idx gs_id, update_strategy& card_updater, game_state& basic_state, network_state& net_state)
+void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands)
 {
     ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -1124,11 +1179,13 @@ void do_ui(stack_duk& sd, arg_idx gs_id, update_strategy& card_updater, game_sta
 
     if(update)
     {
-        std::vector<game_state*> hack{&basic_state};
+        //std::vector<game_state*> hack{&basic_state};
 
-        card_updater.do_update_strategy(1.f, 0.0, hack, net_state, 0);
+        //card_updater.do_update_strategy(1.f, 0.0, hack, net_state, 0);
 
-        to_exec.execute(sd, gs_id);
+        //to_exec.execute(sd, gs_id);
+
+        commands.add(to_exec);
     }
 }
 
@@ -1208,7 +1265,9 @@ int main(int argc, char* argv[])
     game_state::player_t current_player = game_state::SPECTATOR;
 
     game_state basic_state;
-    basic_state.explicit_register();
+
+    command_manager commands;
+    commands.explicit_register();
 
     while(window.isOpen())
     {
@@ -1230,7 +1289,10 @@ int main(int argc, char* argv[])
             }
         }
 
-        do_ui(sd, gs_id, card_updater, basic_state, net_state);
+        do_ui(sd, gs_id, commands);
+
+        commands.network(net_state);
+        commands.exec_all(sd, gs_id);
 
         basic_state.import_state_from_js(sd, gs_id);
 
@@ -1351,9 +1413,9 @@ int main(int argc, char* argv[])
 
                     serialise ser = i.data;
 
-                    basic_state.explicit_register();
+                    commands.explicit_register();
 
-                    ser.handle_serialise_no_clear(basic_state, false);
+                    ser.handle_serialise_no_clear(commands, false);
 
                 }
 
@@ -1372,14 +1434,14 @@ int main(int argc, char* argv[])
             serialise_data_helper::send_mode = 1;
             serialise_data_helper::ref_mode = 1;
 
-            basic_state.explicit_register();
+            commands.explicit_register();
 
             serialise ser;
             ser.default_owner = net_state.my_id;
 
             ser.handle_serialise(serialise_data_helper::send_mode, true);
 
-            ser.handle_serialise_no_clear(basic_state, true);
+            ser.handle_serialise_no_clear(commands, true);
 
             network_object no_test;
             no_test.serialise_id = -2;
