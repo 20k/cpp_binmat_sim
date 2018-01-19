@@ -786,8 +786,6 @@ struct game_state
 
         bool is_face_up = duk_get_boolean(sd.ctx, -1);
 
-        //std::cout << "fup " << is_face_up << std::endl;
-
         arg_idx cards_id = sd.get_prop_string(card_list_id, "cards");
 
         int array_length = sd.get_length(cards_id);

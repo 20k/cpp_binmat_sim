@@ -11,20 +11,6 @@ static duk_ret_t native_print(duk_context *ctx) {
 	return 0;
 }
 
-static duk_ret_t native_adder(duk_context *ctx) {
-	int i;
-	int n = duk_get_top(ctx);  /* #args */
-	double res = 0.0;
-
-	for (i = 0; i < n; i++) {
-		res += duk_to_number(ctx, i);
-	}
-
-	duk_push_number(ctx, res);
-	return 1;  /* one return value */
-}
-
-
 std::string read_file(const std::string& file)
 {
     FILE *f = fopen(file.c_str(), "rb");
@@ -279,8 +265,6 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
     sd.save();
     sd.get_prop_string(sd.get_function_offset(), name);
 
-    //duk_get_prop_string(ctx, offset, name.c_str());
-
     set_args(sd, arg_offsets...);
 
     int len = sizeof...(arg_offsets);
@@ -290,8 +274,6 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
     if(ret != DUK_EXEC_SUCCESS)
     {
         printf("error: %s\n", duk_safe_to_string(sd.ctx, -1));
-
-        //duk_pop(ctx);
 
         sd.pop_n(1);
     }
