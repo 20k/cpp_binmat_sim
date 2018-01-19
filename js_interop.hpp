@@ -58,7 +58,7 @@ struct arg_idx
 {
     int val = 0;
 
-    arg_idx(int v)
+    explicit arg_idx(int v)
     {
         val = v;
     }
@@ -93,14 +93,14 @@ struct stack_duk
 
         saved.pop_back();
 
-        return stack_val;
+        return arg_idx(stack_val);
     }
 
     arg_idx inc()
     {
         stack_val++;
 
-        return stack_val;
+        return arg_idx(stack_val);
     }
 
     void pop_n(int n)
@@ -115,7 +115,7 @@ struct stack_duk
 
         inc();
 
-        return stack_val-1;
+        return arg_idx(stack_val-1);
     }
 
     arg_idx push_string(const std::string& s)
@@ -124,7 +124,7 @@ struct stack_duk
 
         inc();
 
-        return stack_val-1;
+        return arg_idx(stack_val-1);
     }
 
     arg_idx push_int(int v)
@@ -133,7 +133,7 @@ struct stack_duk
 
         inc();
 
-        return stack_val-1;
+        return arg_idx(stack_val-1);
     }
 
     arg_idx get_prop_string(int offset, const std::string& name)
@@ -142,12 +142,58 @@ struct stack_duk
 
         inc();
 
-        return stack_val-1;
+        return arg_idx(stack_val-1);
+    }
+
+    arg_idx get_prop_string(arg_idx offset, const std::string& name)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        return get_prop_string(foffset, name);
+    }
+
+    arg_idx get_prop_index(arg_idx offset, int index)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        duk_get_prop_index(ctx, foffset, index);
+
+        inc();
+
+        return arg_idx(stack_val-1);
+    }
+
+    int get_length(arg_idx offset)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        return duk_get_length(ctx, foffset);
     }
 
     void call(int args)
     {
         duk_call(ctx, args);
+    }
+
+    int get_int(arg_idx offset)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        return duk_get_int(ctx, foffset);
+    }
+
+    bool get_boolean(arg_idx offset)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        return duk_get_boolean(ctx, foffset);
+    }
+
+    std::string get_string(arg_idx offset)
+    {
+        int foffset = offset.val - stack_val - 1;
+
+        return duk_get_string(ctx, foffset);
     }
 
     arg_idx dup_absolute(int absolute_value)
@@ -158,7 +204,7 @@ struct stack_duk
 
         inc();
 
-        return stack_val-1;
+        return arg_idx(stack_val-1);
     }
 };
 

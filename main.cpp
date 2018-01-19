@@ -258,6 +258,8 @@ struct card_list
 
     bool face_up = false;
 
+    arg_idx javascript_id = arg_idx(-1);
+
     bool is_face_up()
     {
         return face_up && cards.size() > 0;
@@ -271,14 +273,6 @@ struct card_list
     bool accepts_face_down_cards()
     {
         return is_face_down() || cards.size() == 0;
-    }
-
-    void make_cards_face_down()
-    {
-        for(card* c : cards)
-        {
-            c->face_down = true;
-        }
     }
 
     card_list get_of_type(card::value_t type)
@@ -506,7 +500,6 @@ struct game_state
         OVERLORD, ///can see everything
         REAL_STATE, ///sees real face up/down status of cards
     };
-
 
     card_list& get_cards(piles::piles_t current_pile, int lane = -1)
     {
@@ -784,6 +777,71 @@ struct game_state
     {
         viewer = player;
     }
+
+    card_list build(stack_duk& sd, arg_idx card_list_id)
+    {
+        card_list ret;
+
+        arg_idx face_up_id = sd.get_prop_string(card_list_id, "face_up");
+
+        bool is_face_up = duk_get_boolean(sd.ctx, -1);
+
+        std::cout << "fup " << is_face_up << std::endl;
+
+        arg_idx cards_id = sd.get_prop_string(card_list_id, "cards");
+
+        int array_length = sd.get_length(cards_id);
+
+        for(int kk=0; kk < array_length; kk++)
+        {
+            card* c = new card;
+
+            arg_idx card_id = sd.get_prop_index(cards_id, kk);
+
+            arg_idx face_down_id = sd.get_prop_string(card_id, "face_down");
+            arg_idx suit_type_id = sd.get_prop_string(card_id, "suit_type");
+            arg_idx card_type_id = sd.get_prop_string(card_id, "card_type");
+
+            c->suit_type = (card::suit_t)sd.get_int(suit_type_id);
+            c->card_type = (card::value_t)sd.get_int(card_type_id);
+
+            c->face_down = sd.get_boolean(face_down_id);
+
+            ret.cards.push_back(c);
+        }
+
+        ret.javascript_id = card_list_id;
+
+        return ret;
+    }
+
+    void import_state_from_js(stack_duk& sd, arg_idx gs_id)
+    {
+        arg_idx turns_id = sd.get_prop_string(gs_id, "turn");
+
+        int turns = duk_get_int(sd.ctx, -1);
+
+        std::vector<card_list> to_process;
+
+        arg_idx piles_id = sd.get_prop_string(gs_id, "piles");
+
+        int num_piles = sd.get_length(piles_id);
+
+        printf("npiles %i\n", num_piles);
+
+        assert(num_piles == 4);
+
+        for(int i=0; i < 4; i++)
+        {
+            arg_idx card_list_id = sd.get_prop_index(piles_id, i);
+
+            build(sd, card_list_id);
+
+            sd.pop_n(1);
+        }
+
+        sd.pop_n(2);
+    }
 };
 
 void tests()
@@ -960,6 +1018,8 @@ int main(int argc, char* argv[])
     game_state current_game;
     current_game.generate_new_game(all_cards);*/
 
+    game_state basic_state;
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -982,27 +1042,29 @@ int main(int argc, char* argv[])
 
         do_ui(sd, gs_id);
 
+        basic_state.import_state_from_js(sd, gs_id);
+
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-            /*if(ImGui::Button("Attacker"))
+            if(ImGui::Button("Attacker"))
             {
-                current_game.set_viewer_state(game_state::ATTACKER);
+                basic_state.set_viewer_state(game_state::ATTACKER);
             }
 
             if(ImGui::Button("Defender"))
             {
-                current_game.set_viewer_state(game_state::DEFENDER);
+                basic_state.set_viewer_state(game_state::DEFENDER);
             }
 
             if(ImGui::Button("See Everything"))
             {
-                current_game.set_viewer_state(game_state::OVERLORD);
+                basic_state.set_viewer_state(game_state::OVERLORD);
             }
 
             if(ImGui::Button("Real State"))
             {
-                current_game.set_viewer_state(game_state::REAL_STATE);
-            }*/
+                basic_state.set_viewer_state(game_state::REAL_STATE);
+            }
 
         ImGui::End();
 
@@ -1035,7 +1097,7 @@ int main(int argc, char* argv[])
             tooltip::add(i);
         }*/
 
-        //current_game.render(window, current_game.viewer);
+        basic_state.render(window, basic_state.viewer);
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
