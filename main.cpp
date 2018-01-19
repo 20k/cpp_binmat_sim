@@ -1039,7 +1039,7 @@ struct command_manager : serialisable
         if(!should_network)
             return;
 
-        std::vector<command_manager*> me_hack;
+        std::vector<command_manager*> me_hack{this};
 
         update_strategy net_update;
         net_update.do_update_strategy(1.f, 0.0, me_hack, net_state, 0);
@@ -1394,11 +1394,15 @@ int main(int argc, char* argv[])
 
                     serialisable* found_s = net_state.get_serialisable(host_id, i.object.serialise_id);
 
+                    printf("got\n");
+
                     if(found_s == nullptr)
                     {
                         i.set_complete();
                         continue;
                     }
+
+                    printf("did\n");
 
                     i.data.force_serialise(found_s, false);
                 }
