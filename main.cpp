@@ -679,7 +679,7 @@ struct game_state
 
     void render_row(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
     {
-        card_list current_deck = get_cards(pile, cnum);
+        card_list& current_deck = get_cards(pile, cnum);
 
         float card_separation = CARD_WIDTH * 1.4f;
 
@@ -709,7 +709,7 @@ struct game_state
 
     void render_individual(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
     {
-        card_list current_deck = get_cards(pile, cnum);
+        card_list& current_deck = get_cards(pile, cnum);
 
         float card_separation = CARD_WIDTH * 1.4f;
 
@@ -1097,8 +1097,9 @@ int main(int argc, char* argv[])
 
         ImGui::End();
 
+        basic_state.render(window, basic_state.viewer);
 
-        /*card_list visible_to = current_game.get_all_visible_cards(current_game.viewer);
+        card_list visible_to = basic_state.get_all_visible_cards(basic_state.viewer);
 
         sf::Mouse mouse;
         auto mpos = mouse.getPosition(window);
@@ -1124,9 +1125,7 @@ int main(int argc, char* argv[])
         for(auto& i : reversed)
         {
             tooltip::add(i);
-        }*/
-
-        basic_state.render(window, basic_state.viewer);
+        }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
