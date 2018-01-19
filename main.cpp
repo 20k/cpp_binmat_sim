@@ -8,6 +8,8 @@
 #include "manager.hpp"
 #include <math.h>
 #include "font_renderer.hpp"
+#include "network_updater.hpp"
+#include "../4space_server/networking.hpp"
 
 #define CARD_WIDTH 25
 #define CARD_HEIGHT CARD_WIDTH * 1.7
@@ -23,6 +25,8 @@ struct tooltip
         current += line + "\n";
     }
 };
+
+#undef VOID
 
 std::string tooltip::current;
 
@@ -81,6 +85,13 @@ struct card : basic_entity
     };
 
     value_t card_type = value_t::TWO;
+
+    virtual void do_serialise(serialise& s, bool ser) override
+    {
+        s.handle_serialise(face_down, ser);
+        s.handle_serialise(suit_type, ser);
+        s.handle_serialise(card_type, ser);
+    }
 
     bool operator==(card& other)
     {
@@ -256,7 +267,7 @@ int do_wild_roundup(int sum)
     return sum;
 }
 
-struct card_list
+struct card_list : serialisable
 {
     ///left is bottom, right is top
     std::vector<card> cards;
@@ -264,6 +275,12 @@ struct card_list
     bool face_up = false;
 
     arg_idx javascript_id = arg_idx(-1);
+
+    virtual void do_serialise(serialise& s, bool ser)
+    {
+        s.handle_serialise(cards, ser);
+        s.handle_serialise(face_up, ser);
+    }
 
     bool is_face_up()
     {
@@ -484,18 +501,35 @@ namespace piles
     }
 }
 
-struct lane
+struct lane : serialisable
 {
     ///lane discard, lane deck, defender stack, attacker stack
     std::array<card_list, 4> card_piles;
+
+    virtual void do_serialise(serialise& s, bool ser) override
+    {
+        s.handle_serialise(card_piles, ser);
+    }
 };
 
-struct game_state
+struct game_state : serialisable
 {
     std::array<lane, 6> lanes;
 
     ///Attacker deck, attacker discard, attacker hand, defender hand
     std::array<card_list, 4> piles;
+
+    int turn = 0;
+
+    virtual void do_serialise(serialise& s, bool ser) override
+    {
+        if(serialise_data_helper::send_mode == 0)
+        {
+            s.handle_serialise(lanes, ser);
+            s.handle_serialise(piles, ser);
+            s.handle_serialise(turn, ser);
+        }
+    }
 
     enum player_t
     {
@@ -822,8 +856,6 @@ struct game_state
 
         return ret;
     }
-
-    int turn = 0;
 
     void import_state_from_js(stack_duk& sd, arg_idx gs_id)
     {
