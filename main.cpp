@@ -938,29 +938,21 @@ void do_ui(stack_duk& sd, arg_idx gs_id)
 
     if(ImGui::Button("Draw from Lane Deck"))
     {
-        //current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::ATTACKER);
-
         call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
     }
 
     if(ImGui::Button("Draw From Attacker Deck"))
     {
-        //current_game.draw_from(piles::ATTACKER_DECK, -1, game_state::ATTACKER);
-
         call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
     }
 
     if(ImGui::Button("Play to Stack"))
     {
-        //current_game.play_to_stack_from_hand(game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
-
         call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Initiate Combat At Lane"))
     {
-        //current_game.try_trigger_combat(game_state::ATTACKER, lane_selected);
-
         call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
     }
 
@@ -970,22 +962,16 @@ void do_ui(stack_duk& sd, arg_idx gs_id)
 
     if(ImGui::Button("Draw From Lane Deck"))
     {
-        //current_game.draw_from(piles::LANE_DECK, lane_selected, game_state::DEFENDER);
-
         call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
     }
 
     if(ImGui::Button("Play to Stack"))
     {
-        //current_game.play_to_stack_from_hand(game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
-
         call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
     }
 
     if(ImGui::Button("Discard Card to Lane Discard Pile"))
     {
-        //current_game.discard_hand_to_lane_discard(lane_selected, hand_card_offset);
-
         call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
     }
 

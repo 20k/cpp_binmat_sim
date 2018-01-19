@@ -1,4 +1,4 @@
-function mainfunc(context, args)
+function(context, args)
 {
 	var suit_t = {"FORM":0, "KIN":1, "DATA":2, "CHAOS":3, "VOID":4, "CHOICE":5, "COUNT_SUIT":6};
 	var value_t = {"TWO":2, "THREE":3, "FOUR":4, "FIVE":5, "SIX":6, "SEVEN":7, "EIGHT":8, "NINE":9, "TEN":10, "TRAP":11, "WILD":12, "BOUNCE":13, "BREAK":14, "COUNT_VALUE":15};

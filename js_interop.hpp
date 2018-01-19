@@ -306,8 +306,7 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
 void register_function(stack_duk& sd, const std::string& function_str, const std::string& function_name)
 {
     std::string test_js = "var global = new Function(\'return this;\')();\n"
-                           + function_str + "\n"
-                           "global." + function_name + " = " + function_name + ";\n";//\n print(global.test)"
+                          "global." + function_name + " = " + function_str + ";\n";//\n print(global.test)"
 
     int pc = duk_peval_string(sd.ctx, test_js.c_str());
 
