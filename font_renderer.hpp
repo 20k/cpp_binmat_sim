@@ -17,6 +17,7 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
     txt.setFont(font);
     txt.setString(to_render.c_str());
     txt.setCharacterSize(round(16 * scale));
+    //txt.setScale(0.5f, 0.5f);
 
     pos = round(pos);
 
@@ -26,7 +27,7 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
 
     txt.setColor(sf::Color(col.x(), col.y(), col.z(), col.w()));
 
-    txt.setOrigin(txt.getLocalBounds().width/2.f, 0.f);
+    txt.setOrigin(round(txt.getLocalBounds().width/2.f), 0.f);
 
     win.draw(txt);
 }

@@ -1208,6 +1208,7 @@ void init_js_interop(stack_duk& sd)
     sd.save_function_call_point();
 }
 
+///need to network initial card state and then we're golden
 int main(int argc, char* argv[])
 {
     stack_duk sd;
