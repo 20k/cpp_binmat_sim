@@ -1047,6 +1047,8 @@ int main(int argc, char* argv[])
     game_state current_game;
     current_game.generate_new_game(all_cards);*/
 
+    game_state::player_t current_player = game_state::SPECTATOR;
+
     game_state basic_state;
 
     while(window.isOpen())
@@ -1075,17 +1077,17 @@ int main(int argc, char* argv[])
 
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-            if(ImGui::Button("Attacker"))
+            if(current_player != game_state::DEFENDER && ImGui::Button("Attacker"))
             {
                 basic_state.set_viewer_state(game_state::ATTACKER);
             }
 
-            if(ImGui::Button("Defender"))
+            if(current_player != game_state::ATTACKER && ImGui::Button("Defender"))
             {
                 basic_state.set_viewer_state(game_state::DEFENDER);
             }
 
-            if(ImGui::Button("See Everything"))
+            if(current_player == game_state::OVERLORD && ImGui::Button("See Everything"))
             {
                 basic_state.set_viewer_state(game_state::OVERLORD);
             }
@@ -1093,6 +1095,19 @@ int main(int argc, char* argv[])
             if(ImGui::Button("Real State"))
             {
                 basic_state.set_viewer_state(game_state::REAL_STATE);
+            }
+
+            if(current_player == game_state::SPECTATOR)
+            {
+                if(ImGui::Button("Lock Into Defender"))
+                {
+                    current_player = game_state::DEFENDER;
+                }
+
+                if(ImGui::Button("Lock Into Attacker"))
+                {
+                    current_player = game_state::ATTACKER;
+                }
             }
 
         ImGui::End();
