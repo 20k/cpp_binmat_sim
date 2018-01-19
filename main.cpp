@@ -525,12 +525,9 @@ struct game_state : serialisable
 
     virtual void do_serialise(serialise& s, bool ser) override
     {
-        if(serialise_data_helper::send_mode == 0)
-        {
-            s.handle_serialise(lanes, ser);
-            s.handle_serialise(piles, ser);
-            s.handle_serialise(turn, ser);
-        }
+        s.handle_serialise(lanes, ser);
+        s.handle_serialise(piles, ser);
+        s.handle_serialise(turn, ser);
     }
 
     enum player_t
@@ -916,8 +913,35 @@ struct game_state : serialisable
         }
 
         sd.pop_n(1);
+    }
 
-        //sd.pop_n(3);
+    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, card& c, int card_list_face_up)
+    {
+        call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)c.card_type, (int)c.suit_type, (bool)c.face_down, (bool)card_list_face_up);
+    }
+
+    void propagate_lane_decks_to_js(stack_duk& sd, arg_idx gs_id)
+    {
+        piles::piles_t pile = piles::LANE_DECK;
+
+        printf("propagating\n");
+
+        for(int lane=0; lane < NUM_LANES; lane++)
+        {
+            card_list& cards = get_cards(pile, lane);
+
+            printf("in lane %i\n", cards.cards.size());
+
+            for(int c=0; c < cards.cards.size(); c++)
+            {
+                set_card(sd, gs_id, pile, lane, c, cards.cards[c], cards.face_up);
+
+                if(!cards.cards[c].face_down)
+                {
+                    std::cout << "fup " << cards.cards[c].get_string() << std::endl;
+                }
+            }
+        }
     }
 };
 
@@ -1209,6 +1233,7 @@ void init_js_interop(stack_duk& sd)
 }
 
 ///need to network initial card state and then we're golden
+///oh and keepalive
 int main(int argc, char* argv[])
 {
     stack_duk sd;
@@ -1266,6 +1291,7 @@ int main(int argc, char* argv[])
     game_state::player_t current_player = game_state::SPECTATOR;
 
     game_state basic_state;
+    basic_state.explicit_register();
 
     command_manager commands;
     commands.explicit_register();
@@ -1414,10 +1440,13 @@ int main(int argc, char* argv[])
 
                     serialise ser = i.data;
 
+                    basic_state.explicit_register();
                     commands.explicit_register();
 
+                    ser.handle_serialise(basic_state, false);
                     ser.handle_serialise_no_clear(commands, false);
 
+                    basic_state.propagate_lane_decks_to_js(sd, gs_id);
                 }
 
                 i.set_complete();
@@ -1435,6 +1464,7 @@ int main(int argc, char* argv[])
             serialise_data_helper::send_mode = 1;
             serialise_data_helper::ref_mode = 1;
 
+            basic_state.explicit_register();
             commands.explicit_register();
 
             serialise ser;
@@ -1442,6 +1472,7 @@ int main(int argc, char* argv[])
 
             ser.handle_serialise(serialise_data_helper::send_mode, true);
 
+            ser.handle_serialise(basic_state, true);
             ser.handle_serialise_no_clear(commands, true);
 
             network_object no_test;

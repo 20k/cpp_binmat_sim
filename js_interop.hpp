@@ -122,6 +122,15 @@ struct stack_duk
         return arg_idx(stack_val-1);
     }
 
+    arg_idx push_boolean(bool v)
+    {
+        duk_push_boolean(ctx, v);
+
+        inc();
+
+        return arg_idx(stack_val-1);
+    }
+
     arg_idx get_prop_string(int offset, const std::string& name)
     {
         duk_get_prop_string(ctx, offset, name.c_str());
@@ -234,6 +243,11 @@ void push_arg(stack_duk& sd, const std::string& s)
 void push_arg(stack_duk& sd, int s)
 {
     sd.push_int(s);
+}
+
+void push_arg(stack_duk& sd, bool s)
+{
+    sd.push_boolean(s);
 }
 
 void push_arg(stack_duk& sd, arg_idx s)

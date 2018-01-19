@@ -841,21 +841,21 @@ function(context, args)
         if(player == player_t["DEFENDER"])
         {
             if(pile == piles["LANE_DECK"])
-            {				
+            {
 				var success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
-				
+
                 if(!success)
                 {
 					success = card_list_shuffle_in(game_state_get_cards(gs, piles["LANE_DECK"], lane), game_state_get_cards(gs, piles["LANE_DISCARD"], lane))
-										
+
                     card_list_make_cards_face_down(game_state_get_cards(gs, piles["LANE_DECK"], lane));
-					
+
                     if(success)
                     {
 						game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
 					}
                     else
-                    {						
+                    {
 						///attacker wins
                         return {ok:success, win:true}
                     }
@@ -874,11 +874,11 @@ function(context, args)
 	{
 		if(lane < 0 || lane >= 6)
 			return {ok:false}
-		
+
 		var result = game_state_draw_from_impl(gs, pile, lane, player);
 
 		game_state_ensure_card_facing(gs);
-		
+
 		return result;
 	}
 
@@ -1163,17 +1163,35 @@ function(context, args)
 	{
 		return "String from JS";
 	}
-	
+
 	function debug(gs)
 	{
 		var cards = game_state_get_cards(gs, piles["LANE_DECK"], 0);
-		
+
 		for(var i = 0; i < cards.cards.length; i++)
 		{
 			var c = cards.cards[i];
-			
+
 			print(c.card_type);
 		}
+	}
+
+	function game_state_set_card(gs, pile, lane, card_offset, type, suit, face_down, card_list_face_up)
+	{
+        var cards = game_state_get_cards(gs, pile, lane);
+
+        for(var i=cards.cards.length; i < card_offset; i++)
+        {
+            cards.cards.push(card_make());
+        }
+
+        cards.face_up = card_list_face_up;
+
+        var card = cards.cards[card_offset];
+
+        card.face_down = face_down;
+		card.suit_type = suit;
+		card.card_type = type;
 	}
 
 	return {
@@ -1197,6 +1215,8 @@ function(context, args)
 			get_string:get_string,
 			debug:debug,
 
+			game_state_set_card:game_state_set_card,
+
 			piles_is_lane_type:piles_is_lane_type,
 			piles:piles,
 			piles_name:piles_name,
@@ -1209,4 +1229,3 @@ function(context, args)
 
 	//lane_make();
 }
- 
