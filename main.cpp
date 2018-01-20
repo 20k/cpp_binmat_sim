@@ -1566,6 +1566,8 @@ int main(int argc, char* argv[])
 
     game_state::player_t current_player = game_state::SPECTATOR;
 
+    net_state.register_keepalive();
+
     game_state basic_state;
     basic_state.explicit_register();
 
@@ -1725,6 +1727,7 @@ int main(int argc, char* argv[])
 
                     serialise ser = i.data;
 
+                    net_state.register_keepalive();
                     basic_state.explicit_register();
                     commands.explicit_register();
 
@@ -1749,6 +1752,7 @@ int main(int argc, char* argv[])
             serialise_data_helper::send_mode = 1;
             serialise_data_helper::ref_mode = 1;
 
+            net_state.register_keepalive();
             basic_state.explicit_register();
             commands.explicit_register();
 
