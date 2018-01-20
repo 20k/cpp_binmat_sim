@@ -181,6 +181,30 @@ struct card : basic_entity
         win.draw(shape);
     }
 
+    static void render_empty(vec2f pos, sf::RenderWindow& win)
+    {
+        vec3f empty_pile_col = {1,1,1};
+
+        vec3f col = empty_pile_col * 255.f;
+
+        sf::RectangleShape shape;
+        shape.setPosition(pos.x(), pos.y());
+
+        vec2f dim = {CARD_WIDTH, CARD_HEIGHT};
+
+        shape.setSize(sf::Vector2f(dim.x(), dim.y()));
+        shape.setOrigin(dim.x()/2.f, dim.y()/2.f);
+
+        shape.setOutlineThickness(3);
+        shape.setOutlineColor(sf::Color(col.x(), col.y(), col.z()));
+
+        //shape.setFillColor(sf::Color(col.x(), col.y(), col.z()));
+
+        shape.setFillColor(sf::Color(0,0,0,0));
+
+        win.draw(shape);
+    }
+
     void render_face_down(sf::RenderWindow& win)
     {
         render_card_background(win, false);
@@ -731,11 +755,13 @@ struct game_state : serialisable
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        current_deck.info.pos = {lane_x, centre.y() + yoffset};
+        vec2f real_pos = {lane_x, centre.y() + yoffset};
+
+        current_deck.info.pos = real_pos;
 
         for(card& c : current_deck.cards)
         {
-            c.info.pos = {lane_x, centre.y() + yoffset};
+            c.info.pos = real_pos;
 
             if(is_visible(c, pile, player, cnum))
             {
@@ -745,6 +771,12 @@ struct game_state : serialisable
             {
                 c.render_face_down(win);
             }
+        }
+
+        if(current_deck.cards.size() == 0)
+        {
+            card::render_empty(real_pos, win);
+            return;
         }
 
         vec2f br = {lane_x, centre.y() + yoffset};
@@ -763,14 +795,19 @@ struct game_state : serialisable
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
-        current_deck.info.pos = {lane_x, centre.y() + yoffset};
+        vec2f real_pos = {lane_x, centre.y() + yoffset};
+
+        current_deck.info.pos = real_pos;
 
         if(cnum < 0 || cnum >= current_deck.cards.size())
+        {
+            card::render_empty(real_pos, win);
             return;
+        }
 
         card& c = current_deck.cards[cnum];
 
-        c.info.pos = {lane_x, centre.y() + yoffset};
+        c.info.pos = real_pos;
 
         if(is_visible(c, pile, player, cnum))
         {
@@ -815,18 +852,9 @@ struct game_state : serialisable
             render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
 
-        card_list attacker_deck = get_cards(piles::ATTACKER_DECK, -1);
-        card_list attacker_discard = get_cards(piles::ATTACKER_DISCARD, -1);
+        render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5, centre.y()}, player, win, -vertical_sep * 4);
 
-        if(attacker_deck.cards.size() > 0)
-        {
-            render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5, centre.y()}, player, win, -vertical_sep * 4);
-        }
-
-        if(attacker_discard.cards.size() > 0)
-        {
-            render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
-        }
+        render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
     }
 
     player_t viewer = REAL_STATE;
