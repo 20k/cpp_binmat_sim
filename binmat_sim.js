@@ -898,8 +898,17 @@ function(context, args)
 		if(card_is_type(to_play, value_t["BREAK"]) && !card_list_contains(appropriate_stack, value_t["BREAK"]) && appropriate_stack.cards.length > 0)
 			return true;
 
+        if(card_is_type(to_play, value_t["BREAK"]) && (card_list_contains(appropriate_stack, value_t["BREAK"]) || appropriate_stack.cards.length == 0))
+			return false;
+
 		if(card_is_type(to_play, value_t["BOUNCE"]) && player == player_t["ATTACKER"] && appropriate_stack.cards.length == 0)
 			return true;
+
+		if(card_is_type(to_play, value_t["BOUNCE"]) && (player != player_t["ATTACKER"] || appropriate_stack.cards.length > 0))
+			return false;
+
+        if(card_list_is_face_up(appropriate_stack))
+            return true;
 
 		return false;
 	}
@@ -938,7 +947,7 @@ function(context, args)
 
 				if(taken.ok)
 				{
-					taken.card.face_down = true;
+					taken.card.face_down = false;
 				}
 			}
 		}
@@ -1086,9 +1095,13 @@ function(context, args)
 
 			card_list_add_face_up_card(appropriate_stack, to_play);
 
+			to_play.face_down = false;
+
 			if(is_face_down)
 			{
 				var did_win = game_state_trigger_combat(gs, player, lane);
+
+				to_play.face_down = false;
 
 				return {ok:true, win:did_win.win}
 			}
