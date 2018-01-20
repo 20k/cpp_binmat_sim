@@ -15,7 +15,6 @@
 #define CARD_HEIGHT CARD_WIDTH * 1.7
 
 #include "js_interop.hpp"
-#include "util.hpp"
 
 struct tooltip
 {
@@ -1000,6 +999,23 @@ struct game_state : serialisable
 
         return false;
     }
+
+    card_list& get_hand(player_t player)
+    {
+        if(player == ATTACKER)
+        {
+            return get_cards(piles::ATTACKER_HAND, -1);
+        }
+
+        if(player == DEFENDER)
+        {
+            return get_cards(piles::DEFENDER_HAND, -1);
+        }
+
+        printf("bad player in get hand\n");
+
+        assert(false);
+    }
 };
 
 void tests()
@@ -1094,6 +1110,55 @@ struct command : serialisable
     }
 };
 
+struct seamless_ui_state
+{
+    int selected_card_id = -1;
+    piles::piles_t pile = piles::COUNT;
+    int lane = -1;
+
+    bool card_selected = false;
+    bool pile_selected = false;
+
+    command get_command(game_state::player_t player)
+    {
+        command c;
+        c.pile = pile;
+        c.lane_selected = lane;
+        c.hand_card_offset = selected_card_id;
+        c.player = player;
+
+        if(pile == piles::LANE_DECK)
+        {
+            if(player == game_state::ATTACKER)
+                c.to_exec = command::ATTACK_DRAW_LANE;
+            if(player == game_state::DEFENDER)
+                c.to_exec = command::DEFENDER_DRAW_LANE;
+        }
+
+        if(pile == piles::ATTACKER_DECK)
+        {
+            c.to_exec = command::ATTACK_DRAW_DECK;
+        }
+
+        if(pile == piles::LANE_DISCARD)
+        {
+            c.to_exec = command::DEFENDER_DISCARD_TO;
+        }
+
+        if(pile == piles::ATTACKER_STACK)
+        {
+            c.to_exec = command::ATTACK_PLAY_STACK;
+        }
+
+        if(pile == piles::DEFENDER_STACK)
+        {
+            c.to_exec = command::DEFENDER_PLAY_STACK;
+        }
+
+        return c;
+    }
+};
+
 struct command_manager : serialisable
 {
     bool cleanup = false;
@@ -1105,8 +1170,11 @@ struct command_manager : serialisable
         s.handle_serialise_no_clear(commands, ser);
     }
 
-    void exec_all(stack_duk& sd, arg_idx gs_id)
+    void exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state)
     {
+        if(commands.size() > 0)
+            ui_state = seamless_ui_state();
+
         for(command& c : commands)
         {
             c.execute(sd, gs_id);
@@ -1130,7 +1198,7 @@ struct command_manager : serialisable
         should_network = false;
     }
 
-    void add(command& c)
+    void add(const command& c)
     {
         commands.push_back(c);
         should_network = true;
@@ -1297,13 +1365,21 @@ void init_js_interop(stack_duk& sd)
     sd.save_function_call_point();
 }
 
-void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos)
+void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos, seamless_ui_state& ui_state)
 {
+    if(ImGui::IsMouseClicked(1))
+    {
+        ui_state = seamless_ui_state();
+    }
+
+    if(!basic_state.can_act(player, sd, gs_id))
+        return;
+
     for(int i=0; i < NUM_LANES; i++)
     {
         card_list& cards = basic_state.get_cards(piles::LANE_DECK, i);
 
-        if(cards.is_within(mpos) && basic_state.can_act(player, sd, gs_id))
+        if(cards.is_within(mpos))
         {
             tooltip::add("Draw to Hand");
 
@@ -1324,6 +1400,72 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
                 commands.add(to_exec);
             }
         }
+
+        card_list& c2 = basic_state.get_cards(piles::DEFENDER_STACK, i);
+        card_list& c3 = basic_state.get_cards(piles::ATTACKER_STACK, i);
+        card_list& c4 = basic_state.get_cards(piles::LANE_DISCARD, i);
+
+        ///should prolly use a data driven approach rather than this hardcoding
+        if(c2.is_within(mpos) && player == game_state::DEFENDER)
+        {
+            tooltip::add("Click to Select Defender Stack " + std::to_string(i));
+
+            if(ImGui::IsMouseDoubleClicked(0))
+            {
+                ui_state.pile = piles::DEFENDER_STACK;
+                ui_state.lane = i;
+                ui_state.pile_selected = true;
+            }
+        }
+
+        if(c3.is_within(mpos) && player == game_state::ATTACKER)
+        {
+            tooltip::add("Click to Select Attacker Stack " + std::to_string(i));
+
+            if(ImGui::IsMouseDoubleClicked(0))
+            {
+                ui_state.pile = piles::ATTACKER_STACK;
+                ui_state.lane = i;
+                ui_state.pile_selected = true;
+            }
+        }
+
+        if(c4.is_within(mpos) && player == game_state::DEFENDER)
+        {
+            tooltip::add("Click to Select Discard Stack " + std::to_string(i));
+
+            if(ImGui::IsMouseDoubleClicked(0))
+            {
+                ui_state.pile = piles::LANE_DISCARD;
+                ui_state.lane = i;
+                ui_state.pile_selected = true;
+            }
+        }
+    }
+
+    card_list& hand = basic_state.get_hand(player);
+
+    for(int coffset = 0; coffset < hand.cards.size(); coffset++)
+    {
+        card& c = hand.cards[coffset];
+
+        if(c.is_within(mpos))
+        {
+            tooltip::add("Click to Select Card");
+
+            if(ImGui::IsMouseDoubleClicked(0))
+            {
+                ui_state.card_selected = true;
+                ui_state.selected_card_id = coffset;
+            }
+        }
+    }
+
+    if(ui_state.pile_selected && ui_state.card_selected)
+    {
+        commands.add(ui_state.get_command(player));
+
+        ui_state = seamless_ui_state();
     }
 }
 
@@ -1391,6 +1533,8 @@ int main(int argc, char* argv[])
     command_manager commands;
     commands.explicit_register();
 
+    seamless_ui_state ui_state;
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -1416,10 +1560,10 @@ int main(int argc, char* argv[])
 
         do_ui(sd, gs_id, commands, current_player, basic_state);
 
-        do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y});
+        do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y}, ui_state);
 
         commands.network(net_state);
-        commands.exec_all(sd, gs_id);
+        commands.exec_all(sd, gs_id, ui_state);
 
         basic_state.import_state_from_js(sd, gs_id);
 
