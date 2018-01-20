@@ -1457,6 +1457,25 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
     if(!basic_state.can_act(player, sd, gs_id))
         return;
 
+    card_list& attacker_deck = basic_state.get_cards(piles::ATTACKER_DECK, -1);
+
+    if(player == game_state::ATTACKER && attacker_deck.is_within(mpos))
+    {
+        tooltip::add("Draw to Hand");
+
+        if(ImGui::IsMouseDoubleClicked(0))
+        {
+            command to_exec;
+
+            to_exec.to_exec = command::ATTACK_DRAW_DECK;
+            to_exec.pile = piles::ATTACKER_DECK;
+            to_exec.player = player;
+            to_exec.lane_selected = -1;
+
+            commands.add(to_exec);
+        }
+    }
+
     for(int i=0; i < NUM_LANES; i++)
     {
         card_list& cards = basic_state.get_cards(piles::LANE_DECK, i);
@@ -1477,7 +1496,6 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
                 to_exec.pile = piles::LANE_DECK;
                 to_exec.player = player;
                 to_exec.lane_selected = i;
-
 
                 commands.add(to_exec);
             }
