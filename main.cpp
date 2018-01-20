@@ -15,6 +15,7 @@
 #define CARD_HEIGHT CARD_WIDTH * 1.7
 
 #include "js_interop.hpp"
+#include "util.hpp"
 
 struct tooltip
 {
@@ -26,6 +27,7 @@ struct tooltip
     }
 };
 
+///screw u windows
 #undef VOID
 
 std::string tooltip::current;
@@ -275,6 +277,18 @@ struct card_list : serialisable
     bool face_up = false;
 
     arg_idx javascript_id = arg_idx(-1);
+
+    trans info;
+
+    bool is_within(vec2f pos)
+    {
+        vec2f centre = info.pos;
+
+        vec2f tl = centre - (vec2f){CARD_WIDTH, CARD_HEIGHT}/2.f;
+        vec2f br = centre + (vec2f){CARD_WIDTH, CARD_HEIGHT}/2.f;
+
+        return pos.x() >= tl.x() && pos.y() >= tl.y() && pos.x() < br.x() && pos.y() < br.y();
+    }
 
     virtual void do_serialise(serialise& s, bool ser)
     {
@@ -718,6 +732,8 @@ struct game_state : serialisable
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
 
+        current_deck.info.pos = {lane_x, centre.y() + yoffset};
+
         for(card& c : current_deck.cards)
         {
             c.info.pos = {lane_x, centre.y() + yoffset};
@@ -742,11 +758,16 @@ struct game_state : serialisable
 
     void render_individual(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
     {
-        card_list& current_deck = get_cards(pile, cnum);
+        card_list& current_deck = get_cards(pile, -1);
 
         float card_separation = CARD_WIDTH * 1.4f;
 
         float lane_x = (card_separation * cnum) - (card_separation * max_num/2.f) + centre.x();
+
+        current_deck.info.pos = {lane_x, centre.y() + yoffset};
+
+        if(cnum < 0 || cnum >= current_deck.cards.size())
+            return;
 
         card& c = current_deck.cards[cnum];
 
@@ -966,6 +987,18 @@ struct game_state : serialisable
                 }
             }
         }
+    }
+
+
+    bool can_act(player_t player, stack_duk& sd, arg_idx gs_id)
+    {
+        if(player == DEFENDER && defender_turn(sd, gs_id))
+            return true;
+
+        if(player == ATTACKER && attacker_turn(sd, gs_id))
+            return true;
+
+        return false;
     }
 };
 
@@ -1264,6 +1297,36 @@ void init_js_interop(stack_duk& sd)
     sd.save_function_call_point();
 }
 
+void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos)
+{
+    for(int i=0; i < NUM_LANES; i++)
+    {
+        card_list& cards = basic_state.get_cards(piles::LANE_DECK, i);
+
+        if(cards.is_within(mpos) && basic_state.can_act(player, sd, gs_id))
+        {
+            tooltip::add("Draw to Hand");
+
+            if(ImGui::IsMouseDoubleClicked(0))
+            {
+                command to_exec;
+
+                if(player == game_state::ATTACKER)
+                    to_exec.to_exec = command::ATTACK_DRAW_LANE;
+                if(player == game_state::DEFENDER)
+                    to_exec.to_exec = command::DEFENDER_DRAW_LANE;
+
+                to_exec.pile = piles::LANE_DECK;
+                to_exec.player = player;
+                to_exec.lane_selected = i;
+
+
+                commands.add(to_exec);
+            }
+        }
+    }
+}
+
 ///need to network initial card state and then we're golden
 ///oh and keepalive
 int main(int argc, char* argv[])
@@ -1348,7 +1411,12 @@ int main(int argc, char* argv[])
             }
         }
 
+        sf::Mouse mouse;
+        auto mpos = mouse.getPosition(window);
+
         do_ui(sd, gs_id, commands, current_player, basic_state);
+
+        do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y});
 
         commands.network(net_state);
         commands.exec_all(sd, gs_id);
@@ -1396,9 +1464,6 @@ int main(int argc, char* argv[])
 
         card_list visible_to = basic_state.get_all_visible_cards(basic_state.viewer);
 
-        sf::Mouse mouse;
-        auto mpos = mouse.getPosition(window);
-
         std::deque<std::string> reversed;
 
         for(card& c : visible_to.cards)
@@ -1420,6 +1485,11 @@ int main(int argc, char* argv[])
         for(auto& i : reversed)
         {
             tooltip::add(i);
+        }
+
+        ///BETTER INTERACTION
+        {
+
         }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
