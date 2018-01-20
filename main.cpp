@@ -787,7 +787,7 @@ struct game_state : serialisable
             render_font(win, std::to_string(current_deck.cards.size()), br, {1,1,1,1}, 0.6f);
     }
 
-    void render_individual(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
+    vec2f render_individual(piles::piles_t pile, int cnum, int max_num, vec2f centre, player_t player, sf::RenderWindow& win, float yoffset)
     {
         card_list& current_deck = get_cards(pile, -1);
 
@@ -802,7 +802,7 @@ struct game_state : serialisable
         if(cnum < 0 || cnum >= current_deck.cards.size())
         {
             card::render_empty(real_pos, win);
-            return;
+            return real_pos;
         }
 
         card& c = current_deck.cards[cnum];
@@ -817,6 +817,8 @@ struct game_state : serialisable
         {
             c.render_face_down(win);
         }
+
+        return real_pos;
     }
 
     void render(sf::RenderWindow& win, player_t player)
@@ -852,9 +854,24 @@ struct game_state : serialisable
             render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
 
-        render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5.4, centre.y()}, player, win, -vertical_sep * 4);
 
-        render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
+        card_list& attacker_deck = get_cards(piles::ATTACKER_DECK, -1);
+
+        vec2f adeck_pos = render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5.4, centre.y()}, player, win, -vertical_sep * 4);
+
+        for(card& c : attacker_deck.cards)
+        {
+            c.info.pos = adeck_pos;
+        }
+
+        card_list& attacker_discard = get_cards(piles::ATTACKER_DISCARD, -1);
+
+        vec2f adiscard_pos = render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
+
+        for(card& c : attacker_discard.cards)
+        {
+            c.info.pos = adiscard_pos;
+        }
     }
 
     player_t viewer = REAL_STATE;
@@ -1697,6 +1714,9 @@ int main(int argc, char* argv[])
         basic_state.render(window, basic_state.viewer);
 
         card_list visible_to = basic_state.get_all_visible_cards(basic_state.viewer);
+
+        //card_list& astack = basic_state.get_cards(piles::ATTACKER_DISCARD, -1);
+        //printf("%i astack %i fstack\n", astack.cards.size(), visible_to.cards.size());
 
         std::deque<std::string> reversed;
 

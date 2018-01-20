@@ -818,7 +818,7 @@ function(context, args)
 
             if(pile == piles["LANE_DECK"])
             {
-                if(lane < 0 || lane >= 6)
+                if(lane < 0 || lane >= num_lanes)
                     return {ok:false};
 
                 if(game_state_lane_protected(gs, lane))
@@ -853,7 +853,7 @@ function(context, args)
         {
             if(pile == piles["LANE_DECK"])
             {
-                if(lane < 0 || lane >= 6)
+                if(lane < 0 || lane >= num_lanes)
                     return {ok:false};
 
 				var success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
