@@ -852,7 +852,7 @@ struct game_state : serialisable
             render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
 
-        render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5, centre.y()}, player, win, -vertical_sep * 4);
+        render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5.4, centre.y()}, player, win, -vertical_sep * 4);
 
         render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
     }
@@ -1154,6 +1154,8 @@ struct seamless_ui_state
     bool card_selected = false;
     bool pile_selected = false;
 
+    bool initiate_combat = false;
+
     command get_command(game_state::player_t player)
     {
         command c;
@@ -1161,6 +1163,12 @@ struct seamless_ui_state
         c.lane_selected = lane;
         c.hand_card_offset = selected_card_id;
         c.player = player;
+
+        if(initiate_combat)
+        {
+            c.to_exec = command::ATTACK_INITIATE_COMBAT;
+            return c;
+        }
 
         if(pile == piles::LANE_DECK)
         {
@@ -1452,7 +1460,10 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
 
         std::vector<piles::piles_t> pile_list = {piles::DEFENDER_STACK, piles::ATTACKER_STACK, piles::LANE_DISCARD};
         std::vector<game_state::player_t> valid_players = {game_state::DEFENDER, game_state::ATTACKER, game_state::DEFENDER};
-        std::vector<std::string> strings = {"Click to Select Defender Stack", "Click to Select Attacker Stack", "Click to Select Discad Pile"};
+        std::vector<std::string> strings = {"Click to Select Defender Stack", "Click to Select Attacker Stack", "Click to Select Discard Pile"};
+
+        bool any_true = false;
+        std::string extra_string = "Middle Mouse to Initiate Combat";
 
         for(int kk=0; kk < pile_list.size(); kk++)
         {
@@ -1462,13 +1473,26 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
             {
                 tooltip::add(strings[kk] + " " + std::to_string(i));
 
+                any_true = true;
+
                 if(ImGui::IsMouseClicked(0))
                 {
                     ui_state.pile = pile_list[kk];
                     ui_state.lane = i;
                     ui_state.pile_selected = true;
                 }
+
+                if(ImGui::IsMouseClicked(2))
+                {
+                    ui_state.lane = i;
+                    ui_state.initiate_combat = true;
+                }
             }
+        }
+
+        if(any_true)
+        {
+            tooltip::add(extra_string);
         }
     }
 
@@ -1500,7 +1524,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         tooltip::add("Card Selected");
     }
 
-    if(ui_state.pile_selected && ui_state.card_selected)
+    if((ui_state.pile_selected && ui_state.card_selected) || ui_state.initiate_combat)
     {
         commands.add(ui_state.get_command(player));
 
