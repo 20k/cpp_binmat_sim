@@ -1065,7 +1065,7 @@ function(context, args)
 		{
 			should_bounce = true;
 
-			events += "0/0 bounce\n";
+			events += "0/0 Bounce\n";
 		}
 
 		if(should_bounce)
@@ -1101,7 +1101,7 @@ function(context, args)
 			events += "Using BREAK damage rules\n";
 		}
 
-		events += "Resolved damage: " + damage + "\n";
+		events += "Resolved Damage: " + damage + "\n";
 
 		for(var cur_d = damage; cur_d > 0; cur_d--)
 		{
