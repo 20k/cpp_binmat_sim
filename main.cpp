@@ -854,24 +854,8 @@ struct game_state : serialisable
             render_individual(piles::ATTACKER_HAND, i, attacker_hand.cards.size(), centre, player, win, -vertical_sep * 5);
         }
 
-
-        card_list& attacker_deck = get_cards(piles::ATTACKER_DECK, -1);
-
-        vec2f adeck_pos = render_individual(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5.4, centre.y()}, player, win, -vertical_sep * 4);
-
-        for(card& c : attacker_deck.cards)
-        {
-            c.info.pos = adeck_pos;
-        }
-
-        card_list& attacker_discard = get_cards(piles::ATTACKER_DISCARD, -1);
-
-        vec2f adiscard_pos = render_individual(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
-
-        for(card& c : attacker_discard.cards)
-        {
-            c.info.pos = adiscard_pos;
-        }
+        render_row(piles::ATTACKER_DECK, 0, 1, {centre.x() + CARD_WIDTH * 5.4, centre.y()}, player, win, -vertical_sep * 4);
+        render_row(piles::ATTACKER_DISCARD, 0, 1, {centre.x() + CARD_WIDTH * 4, centre.y()}, player, win, -vertical_sep * 4);
     }
 
     player_t viewer = REAL_STATE;
