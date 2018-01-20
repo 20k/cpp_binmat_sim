@@ -1365,6 +1365,8 @@ void init_js_interop(stack_duk& sd)
     sd.save_function_call_point();
 }
 
+///currently the ui uses double clicking
+///instead it should be one click to get card, one click to get pile, and one click to confirm
 void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos, seamless_ui_state& ui_state)
 {
     if(ImGui::IsMouseClicked(1))
@@ -1410,7 +1412,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         {
             tooltip::add("Click to Select Defender Stack " + std::to_string(i));
 
-            if(ImGui::IsMouseDoubleClicked(0))
+            if(ImGui::IsMouseClicked(0))
             {
                 ui_state.pile = piles::DEFENDER_STACK;
                 ui_state.lane = i;
@@ -1422,7 +1424,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         {
             tooltip::add("Click to Select Attacker Stack " + std::to_string(i));
 
-            if(ImGui::IsMouseDoubleClicked(0))
+            if(ImGui::IsMouseClicked(0))
             {
                 ui_state.pile = piles::ATTACKER_STACK;
                 ui_state.lane = i;
@@ -1434,7 +1436,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         {
             tooltip::add("Click to Select Discard Stack " + std::to_string(i));
 
-            if(ImGui::IsMouseDoubleClicked(0))
+            if(ImGui::IsMouseClicked(0))
             {
                 ui_state.pile = piles::LANE_DISCARD;
                 ui_state.lane = i;
@@ -1453,13 +1455,25 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         {
             tooltip::add("Click to Select Card");
 
-            if(ImGui::IsMouseDoubleClicked(0))
+            if(ImGui::IsMouseClicked(0) && !suppress_click)
             {
                 ui_state.card_selected = true;
                 ui_state.selected_card_id = coffset;
             }
         }
     }
+
+    if(ui_state.pile_selected)
+    {
+        tooltip::add("Pile Selected");
+    }
+
+    if(ui_state.card_selected)
+    {
+        tooltip::add("Card Selected");
+    }
+
+    suppress_click = false;
 
     if(ui_state.pile_selected && ui_state.card_selected)
     {
