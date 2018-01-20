@@ -1365,8 +1365,6 @@ void init_js_interop(stack_duk& sd)
     sd.save_function_call_point();
 }
 
-///currently the ui uses double clicking
-///instead it should be one click to get card, one click to get pile, and one click to confirm
 void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos, seamless_ui_state& ui_state)
 {
     if(ImGui::IsMouseClicked(1))
