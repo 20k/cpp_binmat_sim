@@ -218,7 +218,6 @@ function(context, args)
 	{
 		var sum = 0;
 
-        //for(var c1 of cl.cards)
 		for(var k2 = 0; k2 < cl.cards.length; k2++)
         {
 			var current_card = cl.cards[k2];
@@ -231,12 +230,11 @@ function(context, args)
 
         var powers_to_bump_up = 0;
 
-        //for(var c2 of cl.cards)
 		for(var k1 = 0; k1 < cl.cards.length; k1++)
         {
 			var c2 = cl.cards[k1];
 
-            if(card_is_type(c2, "WILD"))
+            if(card_is_type(c2, value_t["WILD"]))
             {
                 powers_to_bump_up++;
             }
@@ -1010,10 +1008,6 @@ function(context, args)
 		{
 			should_bounce = true;
 		}
-
-		print("dam");
-		print(attacker_damage);
-		print(defender_damage);
 
 		if(should_bounce)
 		{
