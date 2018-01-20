@@ -1155,6 +1155,7 @@ struct seamless_ui_state
     bool pile_selected = false;
 
     bool initiate_combat = false;
+    int is_faceup = false;
 
     command get_command(game_state::player_t player)
     {
@@ -1163,6 +1164,7 @@ struct seamless_ui_state
         c.lane_selected = lane;
         c.hand_card_offset = selected_card_id;
         c.player = player;
+        c.is_faceup = is_faceup;
 
         if(initiate_combat)
         {
@@ -1429,6 +1431,12 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         ui_state = seamless_ui_state();
     }
 
+    sf::Keyboard key;
+
+    ImGuiIO& io{ImGui::GetIO()};
+
+    io.KeysDown[sf::Keyboard::F] = key.isKeyPressed(sf::Keyboard::F);
+
     if(!basic_state.can_act(player, sd, gs_id))
         return;
 
@@ -1525,6 +1533,20 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
     if(ui_state.card_selected)
     {
         tooltip::add("Card Selected");
+    }
+
+
+    if(ui_state.pile_selected || ui_state.card_selected)
+    {
+        if(ui_state.is_faceup)
+            tooltip::add("Playing Face UP, F to toggle");
+        else
+            tooltip::add("Playing Face DOWN, F to toggle");
+    }
+
+    if(ImGui::IsKeyPressed(sf::Keyboard::F))
+    {
+        ui_state.is_faceup = !ui_state.is_faceup;
     }
 
     if((ui_state.pile_selected && ui_state.card_selected) || ui_state.initiate_combat)
@@ -1678,11 +1700,14 @@ int main(int argc, char* argv[])
 
         std::deque<std::string> reversed;
 
-        for(card& c : visible_to.cards)
+        if(visible_to.cards.size() > 0)
         {
-            if(c.is_within({mpos.x, mpos.y}))
+            for(card& c : visible_to.cards)
             {
-                reversed.push_back(c.get_string());
+                if(c.is_within({mpos.x, mpos.y}))
+                {
+                    reversed.push_back(c.get_string());
+                }
             }
         }
 
