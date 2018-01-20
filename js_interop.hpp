@@ -131,6 +131,13 @@ struct stack_duk
         return arg_idx(stack_val-1);
     }
 
+    bool has_prop_string(arg_idx offset, const std::string& name)
+    {
+        int foffset = offset.val - stack_val;
+
+        return duk_has_prop_string(ctx, foffset, name.c_str());
+    }
+
     arg_idx get_prop_string(int offset, const std::string& name)
     {
         duk_get_prop_string(ctx, offset, name.c_str());

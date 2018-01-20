@@ -1087,8 +1087,10 @@ struct command : serialisable
     int is_faceup = false;
     int hand_card_offset = 0;
 
-    void execute(stack_duk& sd, arg_idx gs_id)
+    std::string execute(stack_duk& sd, arg_idx gs_id)
     {
+        std::string events = "";
+
         if(to_exec == ATTACK_DRAW_LANE)
         {
             call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
@@ -1105,7 +1107,16 @@ struct command : serialisable
 
         if(to_exec == ATTACK_PLAY_STACK)
         {
-            call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+            arg_idx result = call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+
+            if(sd.has_prop_string(result, "events"))
+            {
+                arg_idx event_str_id = sd.get_prop_string(result, "events");
+
+                events = sd.get_string(event_str_id);
+
+                sd.pop_n(1);
+            }
 
             sd.pop_n(1);
         }
@@ -1113,7 +1124,16 @@ struct command : serialisable
 
         if(to_exec == ATTACK_INITIATE_COMBAT)
         {
-            call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
+            arg_idx result = call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
+
+            if(sd.has_prop_string(result, "events"))
+            {
+                arg_idx event_str_id = sd.get_prop_string(result, "events");
+
+                events = sd.get_string(event_str_id);
+
+                sd.pop_n(1);
+            }
 
             sd.pop_n(1);
         }
@@ -1149,6 +1169,8 @@ struct command : serialisable
         call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
 
         sd.pop_n(1);
+
+        return events;
     }
 
     virtual void do_serialise(serialise& s, bool ser)
@@ -1232,17 +1254,21 @@ struct command_manager : serialisable
         s.handle_serialise_no_clear(commands, ser);
     }
 
-    void exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state)
+    std::string exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state)
     {
+        std::string ret;
+
         if(commands.size() > 0)
             ui_state = seamless_ui_state();
 
         for(command& c : commands)
         {
-            c.execute(sd, gs_id);
+            ret += c.execute(sd, gs_id);
         }
 
         commands.clear();
+
+        return ret;
     }
 
     bool should_network = false;
@@ -1666,6 +1692,8 @@ int main(int argc, char* argv[])
 
     seamless_ui_state ui_state;
 
+    std::string last_events = "";
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -1694,9 +1722,20 @@ int main(int argc, char* argv[])
         do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y}, ui_state);
 
         commands.network(net_state);
-        commands.exec_all(sd, gs_id, ui_state);
+        std::string events = commands.exec_all(sd, gs_id, ui_state);
+
+        if(events.size() != 0)
+        {
+            last_events = events;
+        }
 
         basic_state.import_state_from_js(sd, gs_id);
+
+        ImGui::Begin("Last Combat Log", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Text(last_events.c_str());
+
+        ImGui::End();
 
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 

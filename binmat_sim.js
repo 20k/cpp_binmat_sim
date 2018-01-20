@@ -50,6 +50,11 @@ function(context, args)
 		return card.card_type;
 	}
 
+	function card_get_string(card)
+	{
+	    return card_strings[card.card_type]
+	}
+
 	function card_is_face_up(card)
 	{
 		return !card.face_down;
@@ -975,6 +980,22 @@ function(context, args)
 
 		var events = ""
 
+		events += "Attacker Cards: "
+
+		for(var aic = 0; aic < attacker_stack.cards.length; aic++)
+        {
+            events += card_get_string(attacker_stack.cards[aic]);
+        }
+
+        events += "\nDefender Cards: ";
+
+        for(var dic = 0; dic < defender_stack.cards.length; dic++)
+        {
+            events += card_get_string(defender_stack.cards[dic]);
+        }
+
+        events += "\n";
+
 		if(who_triggered == player_t["ATTACKER"])
 		{
 		    events += "Attacker Triggered\n";
@@ -1002,7 +1023,7 @@ function(context, args)
 		{
 			should_bounce = true;
 
-			events += "Bounce due to bounce card\n";
+			events += "Bounce due to Bounce card(s)\n";
 		}
 
 		//for(var c of attacker_stack.cards)
@@ -1023,12 +1044,12 @@ function(context, args)
 
 		if(defender_bounce.cards.length > 0)
         {
-            events += "Defender Bounce to Attacker Discard\n";
+            events += "Defender Bounce Card to Attacker Discard\n";
         }
 
         if(attacker_bounce.cards.length > 0)
         {
-            events += "Attacker Bounce to Attacker Discard\n";
+            events += "Attacker Bounce Card to Lane Discard\n";
         }
 
 		card_list_steal_all_of(attacker_discard, defender_stack, value_t["BOUNCE"]);
@@ -1053,6 +1074,8 @@ function(context, args)
 
 			card_list_steal_all(attacker_discard, attacker_stack);
 
+			events += "Attacker Stack to Attacker Discard\n";
+
 			return {ok:true, events:events}
 		}
 
@@ -1061,6 +1084,8 @@ function(context, args)
 		    events += "Attacker did not win fight\n";
 
 			card_list_steal_all(lane_discard, attacker_stack);
+
+			events += "Attacker Stack to Lane Discard\n";
 
 			return {ok:true, events:events};
 		}
@@ -1086,7 +1111,7 @@ function(context, args)
 			{
 				var taken = card_list_take_top_card(attacker_discard, defender_stack);
 
-			    events += "Sent Defender Card " + card_strings[taken.card.card_type] + " to attacker discard\n";
+			    events += "Sent Defender Stack Card " + card_strings[taken.card.card_type] + " to Attacker Discard\n";
 
 				continue;
 			}
@@ -1098,9 +1123,9 @@ function(context, args)
 				var taken = card_list_take_top_card(attacker_hand, lane_deck);
 
 				if(lane_has_faceup_top_card(lane))
-                    events += "Sent Lane Card " + card_strings[taken.card.card_type] + " to attacker hand\n";
+                    events += "Sent Lane Deck Card " + card_strings[taken.card.card_type] + " to Attacker Hand\n";
                 else
-                    events += "Sent Lane Card to attacker hand\n";
+                    events += "Sent Lane Deck Card to attacker hand\n";
 
 				continue;
 			}
@@ -1115,9 +1140,9 @@ function(context, args)
 				var taken = card_list_take_top_card(attacker_hand, lane_deck);
 
 				if(lane_has_faceup_top_card(lane))
-                    events += "Sent Lane Card " + card_strings[taken.card.card_type] + " to attacker hand\n";
+                    events += "Sent Lane Deck Card " + card_strings[taken.card.card_type] + " to attacker hand\n";
                 else
-                    events += "Sent Lane Card to attacker hand\n";
+                    events += "Sent Lane Deck Card to attacker hand\n";
 
 				continue;
 			}
@@ -1127,7 +1152,7 @@ function(context, args)
 
 		card_list_steal_all(attacker_discard, attacker_stack);
 
-		events += "Sent Attacker Stack to Attacker Discard";
+		events += "Sent Attacker Stack to Attacker Discard\n";
 
 		return {ok:true, events:events}
 	}
