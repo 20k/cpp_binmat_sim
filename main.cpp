@@ -1750,7 +1750,12 @@ int main(int argc, char* argv[])
             {
                 if(c.is_within({mpos.x, mpos.y}))
                 {
-                    reversed.push_back(c.get_string());
+                    std::string face_up = " F-UP";
+                    std::string face_down = " F-DOWN";
+
+                    std::string str = c.face_down ? face_down : face_up;
+
+                    reversed.push_back(c.get_string() + str);
                 }
             }
         }
