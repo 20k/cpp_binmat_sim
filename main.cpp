@@ -1092,22 +1092,30 @@ struct command : serialisable
         if(to_exec == ATTACK_DRAW_LANE)
         {
             call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
+
+            sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_DRAW_DECK)
         {
             call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
+
+            sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_PLAY_STACK)
         {
             call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
+
+            sd.pop_n(1);
         }
 
 
         if(to_exec == ATTACK_INITIATE_COMBAT)
         {
             call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
+
+            sd.pop_n(1);
         }
 
 
@@ -1115,16 +1123,22 @@ struct command : serialisable
         if(to_exec == DEFENDER_DRAW_LANE)
         {
             call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
+
+            sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_PLAY_STACK)
         {
             call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+
+            sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_DISCARD_TO)
         {
             call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
+
+            sd.pop_n(1);
         }
 
         if(to_exec == PASS)
@@ -1133,6 +1147,8 @@ struct command : serialisable
         }
 
         call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
+
+        sd.pop_n(1);
     }
 
     virtual void do_serialise(serialise& s, bool ser)

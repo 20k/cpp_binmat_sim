@@ -998,7 +998,7 @@ function(context, args)
 			c.face_down = false;
 		}
 
-		card_list_steal_all_of(attacker_stack, defender_stack, value_t["BOUNCE"]);
+		card_list_steal_all_of(attacker_discard, defender_stack, value_t["BOUNCE"]);
 		card_list_steal_all_of(lane_discard, attacker_stack, value_t["BOUNCE"]);
 
 		var attacker_damage = card_list_calculate_stack_damage(attacker_stack);
