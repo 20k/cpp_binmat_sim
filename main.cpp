@@ -1403,44 +1403,24 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
             }
         }
 
-        card_list& c2 = basic_state.get_cards(piles::DEFENDER_STACK, i);
-        card_list& c3 = basic_state.get_cards(piles::ATTACKER_STACK, i);
-        card_list& c4 = basic_state.get_cards(piles::LANE_DISCARD, i);
+        std::vector<piles::piles_t> pile_list = {piles::DEFENDER_STACK, piles::ATTACKER_STACK, piles::LANE_DISCARD};
+        std::vector<game_state::player_t> valid_players = {game_state::DEFENDER, game_state::ATTACKER, game_state::DEFENDER};
+        std::vector<std::string> strings = {"Click to Select Defender Stack", "Click to Select Attacker Stack", "Click to Select Discad Pile"};
 
-        ///should prolly use a data driven approach rather than this hardcoding
-        if(c2.is_within(mpos) && player == game_state::DEFENDER)
+        for(int kk=0; kk < pile_list.size(); kk++)
         {
-            tooltip::add("Click to Select Defender Stack " + std::to_string(i));
+            card_list& cx = basic_state.get_cards(pile_list[kk], i);
 
-            if(ImGui::IsMouseClicked(0))
+            if(cx.is_within(mpos) && player == valid_players[kk])
             {
-                ui_state.pile = piles::DEFENDER_STACK;
-                ui_state.lane = i;
-                ui_state.pile_selected = true;
-            }
-        }
+                tooltip::add(strings[kk] + " " + std::to_string(i));
 
-        if(c3.is_within(mpos) && player == game_state::ATTACKER)
-        {
-            tooltip::add("Click to Select Attacker Stack " + std::to_string(i));
-
-            if(ImGui::IsMouseClicked(0))
-            {
-                ui_state.pile = piles::ATTACKER_STACK;
-                ui_state.lane = i;
-                ui_state.pile_selected = true;
-            }
-        }
-
-        if(c4.is_within(mpos) && player == game_state::DEFENDER)
-        {
-            tooltip::add("Click to Select Discard Stack " + std::to_string(i));
-
-            if(ImGui::IsMouseClicked(0))
-            {
-                ui_state.pile = piles::LANE_DISCARD;
-                ui_state.lane = i;
-                ui_state.pile_selected = true;
+                if(ImGui::IsMouseClicked(0))
+                {
+                    ui_state.pile = pile_list[kk];
+                    ui_state.lane = i;
+                    ui_state.pile_selected = true;
+                }
             }
         }
     }
@@ -1455,7 +1435,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         {
             tooltip::add("Click to Select Card");
 
-            if(ImGui::IsMouseClicked(0) && !suppress_click)
+            if(ImGui::IsMouseClicked(0))
             {
                 ui_state.card_selected = true;
                 ui_state.selected_card_id = coffset;
@@ -1472,8 +1452,6 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
     {
         tooltip::add("Card Selected");
     }
-
-    suppress_click = false;
 
     if(ui_state.pile_selected && ui_state.card_selected)
     {
