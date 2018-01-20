@@ -9,7 +9,7 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
 
     if(!loaded)
     {
-        font.loadFromFile("VeraMono.ttf");
+        font.loadFromFile("WhiteRabbit.ttf");
         loaded = true;
     }
 

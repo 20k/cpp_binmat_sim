@@ -931,6 +931,8 @@ function(context, args)
 
 	function game_state_process_trap_cards(gs, my_stack, other_stack, discard)
 	{
+	    var events = "";
+
 		///copy
 		var traps = card_list_get_of_type(my_stack, value_t["TRAP"]);
 
@@ -947,10 +949,14 @@ function(context, args)
 
 				if(taken.ok)
 				{
+                    events += "Trap Triggered and ate " + card_strings[taken.card.card_type] + "\n";
+
 					taken.card.face_down = false;
 				}
 			}
 		}
+
+		return {events:events}
 	}
 
 	function game_state_trigger_combat_impl(gs, who_triggered, lane)
@@ -967,17 +973,23 @@ function(context, args)
 
 		var attacker_hand = game_state_get_cards(gs, piles["ATTACKER_HAND"], -1);
 
+		var events = ""
+
 		if(who_triggered == player_t["ATTACKER"])
 		{
+		    events += "Attacker Triggered\n";
+
 			///attacker then defender
-			game_state_process_trap_cards(gs, attacker_stack, defender_stack, attacker_discard);
-			game_state_process_trap_cards(gs, defender_stack, attacker_stack, lane_discard);
+			events += game_state_process_trap_cards(gs, attacker_stack, defender_stack, attacker_discard).events;
+			events += game_state_process_trap_cards(gs, defender_stack, attacker_stack, lane_discard).events;
 		}
 
 		if(who_triggered == player_t["DEFENDER"])
 		{
-			game_state_process_trap_cards(gs, defender_stack, attacker_stack, lane_discard);
-			game_state_process_trap_cards(gs, attacker_stack, defender_stack, attacker_discard);
+		    events += "Defender Triggered\n";
+
+			events += game_state_process_trap_cards(gs, defender_stack, attacker_stack, lane_discard).events;
+			events += game_state_process_trap_cards(gs, attacker_stack, defender_stack, attacker_discard).events;
 		}
 
 
@@ -989,6 +1001,8 @@ function(context, args)
 		if(attacker_bounce.cards.length > 0 || defender_bounce.cards.length > 0)
 		{
 			should_bounce = true;
+
+			events += "Bounce due to bounce card\n";
 		}
 
 		//for(var c of attacker_stack.cards)
@@ -1007,29 +1021,48 @@ function(context, args)
 			c.face_down = false;
 		}
 
+		if(defender_bounce.cards.length > 0)
+        {
+            events += "Defender Bounce to Attacker Discard\n";
+        }
+
+        if(attacker_bounce.cards.length > 0)
+        {
+            events += "Attacker Bounce to Attacker Discard\n";
+        }
+
 		card_list_steal_all_of(attacker_discard, defender_stack, value_t["BOUNCE"]);
 		card_list_steal_all_of(lane_discard, attacker_stack, value_t["BOUNCE"]);
 
 		var attacker_damage = card_list_calculate_stack_damage(attacker_stack);
 		var defender_damage = card_list_calculate_stack_damage(defender_stack);
 
+		events += "Attacker Damage: " + attacker_damage + "\n";
+		events += "Defender Damage: " + defender_damage + "\n";
+
 		if(attacker_damage == 0 && defender_damage == 0)
 		{
 			should_bounce = true;
+
+			events += "0/0 bounce\n";
 		}
 
 		if(should_bounce)
 		{
+		    events += "Bounce Resolved\n";
+
 			card_list_steal_all(attacker_discard, attacker_stack);
 
-			return {ok:true}
+			return {ok:true, events:events}
 		}
 
 		if(attacker_damage < defender_damage)
 		{
+		    events += "Attacker did not win fight\n";
+
 			card_list_steal_all(lane_discard, attacker_stack);
 
-			return {ok:true};
+			return {ok:true, events:events};
 		}
 
 		var modify_combat_rules = card_list_get_of_type(attacker_stack, value_t["BREAK"]).cards.length > 0;
@@ -1039,7 +1072,11 @@ function(context, args)
 		if(modify_combat_rules)
 		{
 			damage = attacker_damage;
+
+			events += "Using BREAK damage rules\n";
 		}
+
+		events += "Resolved damage: " + damage + "\n";
 
 		for(var cur_d = damage; cur_d > 0; cur_d--)
 		{
@@ -1047,7 +1084,10 @@ function(context, args)
 
 			if(cards_left)
 			{
-				card_list_take_top_card(attacker_discard, defender_stack);
+				var taken = card_list_take_top_card(attacker_discard, defender_stack);
+
+			    events += "Sent Defender Card " + card_strings[taken.card.card_type] + " to attacker discard\n";
+
 				continue;
 			}
 
@@ -1055,7 +1095,13 @@ function(context, args)
 
 			if(lane_cards_exist)
 			{
-				card_list_take_top_card(attacker_hand, lane_deck);
+				var taken = card_list_take_top_card(attacker_hand, lane_deck);
+
+				if(lane_has_faceup_top_card(lane))
+                    events += "Sent Lane Card " + card_strings[taken.card.card_type] + " to attacker hand\n";
+                else
+                    events += "Sent Lane Card to attacker hand\n";
+
 				continue;
 			}
 
@@ -1063,17 +1109,27 @@ function(context, args)
 
 			if(lane_discard_exists)
 			{
+			    events += "Shuffled in Lane Discard\n";
+
 				card_list_shuffle_in(lane_deck, lane_discard);
-				card_list_take_top_card(attacker_hand, lane_deck);
+				var taken = card_list_take_top_card(attacker_hand, lane_deck);
+
+				if(lane_has_faceup_top_card(lane))
+                    events += "Sent Lane Card " + card_strings[taken.card.card_type] + " to attacker hand\n";
+                else
+                    events += "Sent Lane Card to attacker hand\n";
+
 				continue;
 			}
 
-			return {ok:true, win:true}
+			return {ok:true, win:true, events:events}
 		}
 
 		card_list_steal_all(attacker_discard, attacker_stack);
 
-		return {ok:true}
+		events += "Sent Attacker Stack to Attacker Discard";
+
+		return {ok:true, events:events}
 	}
 
 	function game_state_trigger_combat(gs, who_triggered, lane)
@@ -1103,7 +1159,7 @@ function(context, args)
 
 				to_play.face_down = false;
 
-				return {ok:true, win:did_win.win}
+				return {ok:true, win:did_win.win, events:did_win.events}
 			}
 
 			return {ok:true};
