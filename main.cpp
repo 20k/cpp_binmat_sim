@@ -1473,8 +1473,6 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
             {
                 tooltip::add(strings[kk] + " " + std::to_string(i));
 
-                any_true = true;
-
                 if(ImGui::IsMouseClicked(0))
                 {
                     ui_state.pile = pile_list[kk];
@@ -1482,10 +1480,15 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
                     ui_state.pile_selected = true;
                 }
 
-                if(ImGui::IsMouseClicked(2))
+                if(player == game_state::ATTACKER)
                 {
-                    ui_state.lane = i;
-                    ui_state.initiate_combat = true;
+                    any_true = true;
+
+                    if(ImGui::IsMouseClicked(2))
+                    {
+                        ui_state.lane = i;
+                        ui_state.initiate_combat = true;
+                    }
                 }
             }
         }
