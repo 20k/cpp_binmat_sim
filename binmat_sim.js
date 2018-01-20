@@ -169,6 +169,14 @@ function(context, args)
 		}
 	}
 
+	function card_list_make_cards_face_up(cl)
+	{
+        for(var i=0; i < cl.cards.length; i++)
+		{
+			cl.cards[i].face_down = false;
+		}
+	}
+
 	function card_list_get_of_type(cl, type)
 	{
 		var ret = card_list_make();
@@ -776,6 +784,8 @@ function(context, args)
 	{
 		game_state_ensure_faceup_lanes(gs);
 		game_state_ensure_facedown_cards(gs);
+
+		card_list_make_cards_face_up(game_state_get_cards(gs, piles["ATTACKER_DISCARD"], -1));
 	}
 
 	function game_state_draw_from_impl(gs, pile, lane, player)
@@ -810,6 +820,9 @@ function(context, args)
 
             if(pile == piles["LANE_DECK"])
             {
+                if(lane < 0 || lane >= 6)
+                    return {ok:false};
+
                 if(game_state_lane_protected(gs, lane))
                     return {ok:false};
 
@@ -842,6 +855,9 @@ function(context, args)
         {
             if(pile == piles["LANE_DECK"])
             {
+                if(lane < 0 || lane >= 6)
+                    return {ok:false};
+
 				var success = game_state_transfer_top_card(gs, piles["DEFENDER_HAND"], -1, piles["LANE_DECK"], lane);
 
                 if(!success)
@@ -872,9 +888,6 @@ function(context, args)
 
 	function game_state_draw_from(gs, pile, lane, player)
 	{
-		if(lane < 0 || lane >= 6)
-			return {ok:false}
-
 		var result = game_state_draw_from_impl(gs, pile, lane, player);
 
 		game_state_ensure_card_facing(gs);
@@ -933,7 +946,7 @@ function(context, args)
 		}
 	}
 
-	function game_state_trigger_combat(gs, who_triggered, lane)
+	function game_state_trigger_combat_impl(gs, who_triggered, lane)
 	{
 		var attacker_stack = game_state_get_cards(gs, piles["ATTACKER_STACK"], lane);
 		var defender_stack = game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
@@ -998,6 +1011,10 @@ function(context, args)
 			should_bounce = true;
 		}
 
+		print("dam");
+		print(attacker_damage);
+		print(defender_damage);
+
 		if(should_bounce)
 		{
 			card_list_steal_all(attacker_discard, attacker_stack);
@@ -1008,6 +1025,7 @@ function(context, args)
 		if(attacker_damage < defender_damage)
 		{
 			card_list_steal_all(lane_discard, attacker_stack);
+
 			return {ok:true};
 		}
 
@@ -1053,6 +1071,15 @@ function(context, args)
 		card_list_steal_all(attacker_discard, attacker_stack);
 
 		return {ok:true}
+	}
+
+	function game_state_trigger_combat(gs, who_triggered, lane)
+	{
+	    var result = game_state_trigger_combat_impl(gs, who_triggered, lane);
+
+	    game_state_ensure_card_facing(gs);
+
+	    return result
 	}
 
 	function game_state_play_card_on_stack(gs, player, to_play, appropriate_stack, face_up, lane)
