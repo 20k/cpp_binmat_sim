@@ -1773,11 +1773,6 @@ int main(int argc, char* argv[])
             tooltip::add(i);
         }
 
-        ///BETTER INTERACTION
-        {
-
-        }
-
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
         net_state.tick(diff_s);
