@@ -1394,6 +1394,12 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
         ImGui::End();
     }
 
+    ImGui::Begin("Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::Text(("Turn: " + std::to_string(basic_state.turn)).c_str());
+
+    ImGui::End();
+
     if(update)
     {
         //std::vector<game_state*> hack{&basic_state};
