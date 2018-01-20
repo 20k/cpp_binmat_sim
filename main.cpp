@@ -1073,6 +1073,8 @@ struct command : serialisable
         DEFENDER_PLAY_STACK,
         DEFENDER_DISCARD_TO,
 
+        PASS,
+
         COMMAND_COUNT
     };
 
@@ -1122,6 +1124,11 @@ struct command : serialisable
         if(to_exec == DEFENDER_DISCARD_TO)
         {
             call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
+        }
+
+        if(to_exec == PASS)
+        {
+
         }
 
         call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
@@ -1322,6 +1329,13 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
             update = true;
         }
 
+        if(ImGui::Button("Pass"))
+        {
+            to_exec.to_exec = command::PASS;
+            to_exec.player = game_state::ATTACKER;
+            update = true;
+        }
+
         ImGui::End();
     }
 
@@ -1356,6 +1370,13 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
 
             to_exec.to_exec = command::DEFENDER_DISCARD_TO;
 
+            update = true;
+        }
+
+        if(ImGui::Button("Pass"))
+        {
+            to_exec.to_exec = command::PASS;
+            to_exec.player = game_state::DEFENDER;
             update = true;
         }
 
