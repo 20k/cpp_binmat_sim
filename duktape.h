@@ -6,8 +6,8 @@
  *  comments.  Other parts of the header are Duktape internal and related to
  *  e.g. platform/compiler/feature detection.
  *
- *  Git commit a459cf3c9bd1779fc01b435d69302b742675a08f (v2.2.0).
- *  Git branch master.
+ *  Git commit external (external).
+ *  Git branch external.
  *
  *  See Duktape AUTHORS.rst and LICENSE.txt for copyright and
  *  licensing information.
@@ -161,9 +161,9 @@
  * which Duktape snapshot was used.  Not available in the Ecmascript
  * environment.
  */
-#define DUK_GIT_COMMIT                    "a459cf3c9bd1779fc01b435d69302b742675a08f"
-#define DUK_GIT_DESCRIBE                  "v2.2.0"
-#define DUK_GIT_BRANCH                    "master"
+#define DUK_GIT_COMMIT                    "external"
+#define DUK_GIT_DESCRIBE                  "external"
+#define DUK_GIT_BRANCH                    "external"
 
 /* External duk_config.h provides platform/compiler/OS dependent
  * typedefs and macros, and DUK_USE_xxx config options so that

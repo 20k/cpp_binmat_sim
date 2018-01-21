@@ -1688,13 +1688,12 @@ struct player_manager : serialisable
 ///oh and keepalive
 int main(int argc, char* argv[])
 {
-    stack_duk sd;
-    init_js_interop(sd);
-
     networking_init();
     network_state net_state;
     net_state.reliable_ordered.init_client();
     net_state.try_join = true;
+
+    net_state.open_socket_to_master_server(MASTER_IP, MASTER_CLIENT_PORT);
 
     update_strategy card_updater;
 
@@ -1721,6 +1720,9 @@ int main(int argc, char* argv[])
     sf::Clock ui_clock;
 
     sf::Clock time;
+
+    stack_duk sd;
+    init_js_interop(sd);
 
     arg_idx gs_id = call_function_from_absolute(sd, "game_state_make");
     arg_idx cm_id = call_function_from_absolute(sd, "card_manager_make");
@@ -1788,6 +1790,8 @@ int main(int argc, char* argv[])
 
         player_manage.tick(diff_s, net_state);
         commands.network(net_state);
+        net_state.tick_ping_master_for_gameservers();
+
         std::string events = commands.exec_all(sd, gs_id, ui_state);
 
         if(events.size() != 0)
