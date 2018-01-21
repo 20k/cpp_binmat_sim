@@ -2018,10 +2018,6 @@ int main(int argc, char* argv[])
 
         ImGui::Begin("Networking", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        /*if((ImGui::Button("Manual Sync (No longer necessary)") || player_manage.should_synchronise()) && net_state.connected())
-        {
-        }*/
-
         ImGui::Text(("Others Connected: " + std::to_string(player_manage.connected_count())).c_str());
 
         if(!player_manage.is_host && player_manage.can_host)
@@ -2041,12 +2037,7 @@ int main(int argc, char* argv[])
         {
             ImGui::Text("New Players Detected");
 
-            /*if(ImGui::Button("Ignore"))
-            {
-                player_manage.reset_new_players();
-            }*/
-
-            if(player_manage.is_host)// || ImGui::Button("Send Sync (Only one player should click this)"))
+            if(player_manage.is_host)
             {
                 serialisable::reset_network_state();
 
@@ -2073,8 +2064,11 @@ int main(int argc, char* argv[])
                 player_manage.reset_new_players();
                 player_manage.is_joined = true;
             }
+        }
 
-            //player_manage.reset_new_players();
+        if(!net_state.connected())
+        {
+            ImGui::Text("No connection to server");
         }
 
         ImGui::End();
