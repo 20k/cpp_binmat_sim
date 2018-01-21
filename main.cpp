@@ -1735,6 +1735,7 @@ struct player_manager : serialisable
 
     bool is_host = false;
     bool can_host = true;
+    bool is_joined = false;
 };
 
 ///need to network initial card state and then we're golden
@@ -2006,6 +2007,7 @@ int main(int argc, char* argv[])
 
                     player_manage.reset_new_players();
                     player_manage.can_host = false;
+                    player_manage.is_joined = true;
                 }
 
                 i.set_complete();
@@ -2028,6 +2030,11 @@ int main(int argc, char* argv[])
             {
                 player_manage.is_host = true;
             }
+        }
+
+        if(player_manage.is_joined)
+        {
+            ImGui::Text("Joined Server");
         }
 
         if(player_manage.has_new_players())
@@ -2064,6 +2071,7 @@ int main(int argc, char* argv[])
                 net_state.forward_data(no_test, ser);
 
                 player_manage.reset_new_players();
+                player_manage.is_joined = true;
             }
 
             //player_manage.reset_new_players();
