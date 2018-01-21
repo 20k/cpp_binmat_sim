@@ -2038,6 +2038,31 @@ int main(int argc, char* argv[])
 
         ImGui::End();
 
+        ImGui::Begin("Servers", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        std::vector<std::string> network_servers = net_state.get_gameserver_strings();
+
+        for(int i=0; i < network_servers.size(); i++)
+        {
+            if(!net_state.connected_to(i) && ImGui::Button("Join:"))
+            {
+                net_state.try_join_server(i);
+            }
+
+            if(net_state.connected_to(i) && ImGui::Button("Connected:"))
+            {
+
+            }
+
+            ImGui::SameLine();
+
+            ImGui::Text((network_servers[i]).c_str());
+
+            //ImGui::Button((network_servers[i]).c_str());
+        }
+
+        ImGui::End();
+
         if(tooltip::current.size() > 0)
             ImGui::SetTooltip(tooltip::current.c_str());
 
