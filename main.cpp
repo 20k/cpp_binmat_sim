@@ -2043,6 +2043,8 @@ int main(int argc, char* argv[])
 
         window.display();
 
+        Sleep(1);
+
         window.clear();
 
         ImGui::SFML::Update(ui_clock.restart());
