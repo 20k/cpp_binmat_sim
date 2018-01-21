@@ -1732,6 +1732,9 @@ struct player_manager : serialisable
 
         return has_new_players();
     }
+
+    bool is_host = false;
+    bool can_host = true;
 };
 
 ///need to network initial card state and then we're golden
@@ -2000,6 +2003,9 @@ int main(int argc, char* argv[])
                     ser.handle_serialise_no_clear(commands, false);
 
                     basic_state.propagate_lane_decks_to_js(sd, gs_id);
+
+                    player_manage.reset_new_players();
+                    player_manage.can_host = false;
                 }
 
                 i.set_complete();
@@ -2016,16 +2022,24 @@ int main(int argc, char* argv[])
 
         ImGui::Text(("Others Connected: " + std::to_string(player_manage.connected_count())).c_str());
 
+        if(!player_manage.is_host && player_manage.can_host)
+        {
+            if(ImGui::Button("Host"))
+            {
+                player_manage.is_host = true;
+            }
+        }
+
         if(player_manage.has_new_players())
         {
             ImGui::Text("New Players Detected");
 
-            if(ImGui::Button("Ignore"))
+            /*if(ImGui::Button("Ignore"))
             {
                 player_manage.reset_new_players();
-            }
+            }*/
 
-            if(ImGui::Button("Send Sync"))
+            if(player_manage.is_host)// || ImGui::Button("Send Sync (Only one player should click this)"))
             {
                 serialisable::reset_network_state();
 
@@ -2051,6 +2065,8 @@ int main(int argc, char* argv[])
 
                 player_manage.reset_new_players();
             }
+
+            //player_manage.reset_new_players();
         }
 
         ImGui::End();
