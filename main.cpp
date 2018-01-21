@@ -1624,6 +1624,116 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
     }
 }
 
+struct player_info
+{
+    sf::Clock disconnect_time;
+
+    int game_id = -1;
+
+    player_info(int id)
+    {
+        game_id = id;
+    }
+
+    player_info() = default;
+
+    bool strip()
+    {
+        return disconnect_time.getElapsedTime().asSeconds() > 10;
+    }
+
+    void restart()
+    {
+        disconnect_time.restart();
+    }
+};
+
+bool operator<(const player_info& p1, const player_info& p2)
+{
+    return p1.game_id < p2.game_id;
+}
+
+struct player_manager : serialisable
+{
+    bool cleanup = false;
+
+    int my_id = -1;
+    game_state::player_t player = game_state::SPECTATOR;
+
+    std::map<int, player_info> found_ids;
+
+    bool new_players = false;
+
+    update_strategy updater;
+
+    void tick(double diff_s, network_state& net_state)
+    {
+        if(!net_state.connected())
+            return;
+
+        my_id = net_state.my_id;
+
+        std::vector<player_manager*> player_hack{this};
+
+        updater.do_update_strategy(diff_s, 1.f, player_hack, net_state, 0);
+    }
+
+    virtual void do_serialise(serialise& s, bool ser)
+    {
+        if(ser)
+        {
+            s.handle_serialise(my_id, ser);
+        }
+        else
+        {
+            int val = 0;
+
+            s.handle_serialise(val, ser);
+
+            player_info nplayer(val);
+
+            auto found = found_ids.find(val);
+
+            if(found == found_ids.end())
+            {
+                found_ids[val] = nplayer;
+
+                new_players = true;
+            }
+            else
+            {
+                found_ids[val].restart();
+            }
+        }
+    }
+
+    bool has_new_players()
+    {
+        return new_players;
+    }
+
+    void reset_new_players()
+    {
+        new_players = false;
+    }
+
+    int connected_count()
+    {
+        return found_ids.size();
+    }
+
+    bool should_synchronise()
+    {
+        for(auto& i : found_ids)
+        {
+            if(my_id > i.first)
+                return false;
+        }
+
+        return has_new_players();
+    }
+};
+
 ///need to network initial card state and then we're golden
 ///oh and keepalive
 int main(int argc, char* argv[])
@@ -1694,6 +1804,9 @@ int main(int argc, char* argv[])
 
     std::string last_events = "";
 
+    player_manager player_manage;
+    player_manage.explicit_register_never_clear();
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -1721,6 +1834,9 @@ int main(int argc, char* argv[])
 
         do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y}, ui_state);
 
+        double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
+
+        player_manage.tick(diff_s, net_state);
         commands.network(net_state);
         std::string events = commands.exec_all(sd, gs_id, ui_state);
 
@@ -1739,22 +1855,36 @@ int main(int argc, char* argv[])
 
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-            if(current_player != game_state::DEFENDER && ImGui::Button("Attacker"))
+            std::string attacker_str = "Attacker";
+            std::string defender_str = "Defender";
+            std::string everything_str = "See Everything";
+            std::string real_str = "Real State";
+
+            if(basic_state.viewer == game_state::ATTACKER)
+                attacker_str += " <--";
+            if(basic_state.viewer == game_state::DEFENDER)
+                defender_str += " <--";
+            if(basic_state.viewer == game_state::OVERLORD)
+                everything_str += " <--";
+            if(basic_state.viewer == game_state::REAL_STATE)
+                real_str += " <--";
+
+            if(current_player != game_state::DEFENDER && ImGui::Button(attacker_str.c_str()))
             {
                 basic_state.set_viewer_state(game_state::ATTACKER);
             }
 
-            if(current_player != game_state::ATTACKER && ImGui::Button("Defender"))
+            if(current_player != game_state::ATTACKER && ImGui::Button(defender_str.c_str()))
             {
                 basic_state.set_viewer_state(game_state::DEFENDER);
             }
 
-            if(current_player == game_state::OVERLORD && ImGui::Button("See Everything"))
+            if(current_player == game_state::OVERLORD && ImGui::Button(everything_str.c_str()))
             {
                 basic_state.set_viewer_state(game_state::OVERLORD);
             }
 
-            if(ImGui::Button("Real State"))
+            if(ImGui::Button(real_str.c_str()))
             {
                 basic_state.set_viewer_state(game_state::REAL_STATE);
             }
@@ -1764,11 +1894,13 @@ int main(int argc, char* argv[])
                 if(ImGui::Button("Lock Into Defender"))
                 {
                     current_player = game_state::DEFENDER;
+                    basic_state.set_viewer_state(game_state::DEFENDER);
                 }
 
                 if(ImGui::Button("Lock Into Attacker"))
                 {
                     current_player = game_state::ATTACKER;
+                    basic_state.set_viewer_state(game_state::ATTACKER);
                 }
             }
 
@@ -1811,8 +1943,6 @@ int main(int argc, char* argv[])
         {
             tooltip::add(i);
         }
-
-        double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
         net_state.tick(diff_s);
 
@@ -1878,31 +2008,49 @@ int main(int argc, char* argv[])
             }
         }
 
-        ImGui::Begin("Networking");
+        ImGui::Begin("Networking", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        if(ImGui::Button("Massive") && net_state.connected())
+        /*if((ImGui::Button("Manual Sync (No longer necessary)") || player_manage.should_synchronise()) && net_state.connected())
         {
-            serialisable::reset_network_state();
+        }*/
 
-            serialise_data_helper::send_mode = 1;
-            serialise_data_helper::ref_mode = 1;
+        ImGui::Text(("Others Connected: " + std::to_string(player_manage.connected_count())).c_str());
 
-            net_state.register_keepalive();
-            basic_state.explicit_register();
-            commands.explicit_register();
+        if(player_manage.has_new_players())
+        {
+            ImGui::Text("New Players Detected");
 
-            serialise ser;
-            ser.default_owner = net_state.my_id;
+            if(ImGui::Button("Ignore"))
+            {
+                player_manage.reset_new_players();
+            }
 
-            ser.handle_serialise(serialise_data_helper::send_mode, true);
+            if(ImGui::Button("Send Sync"))
+            {
+                serialisable::reset_network_state();
 
-            ser.handle_serialise(basic_state, true);
-            ser.handle_serialise_no_clear(commands, true);
+                serialise_data_helper::send_mode = 1;
+                serialise_data_helper::ref_mode = 1;
 
-            network_object no_test;
-            no_test.serialise_id = -2;
+                net_state.register_keepalive();
+                basic_state.explicit_register();
+                commands.explicit_register();
 
-            net_state.forward_data(no_test, ser);
+                serialise ser;
+                ser.default_owner = net_state.my_id;
+
+                ser.handle_serialise(serialise_data_helper::send_mode, true);
+
+                ser.handle_serialise(basic_state, true);
+                ser.handle_serialise_no_clear(commands, true);
+
+                network_object no_test;
+                no_test.serialise_id = -2;
+
+                net_state.forward_data(no_test, ser);
+
+                player_manage.reset_new_players();
+            }
         }
 
         ImGui::End();
