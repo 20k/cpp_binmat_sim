@@ -15,6 +15,7 @@
 #define CARD_HEIGHT CARD_WIDTH * 1.7
 
 #include "js_interop.hpp"
+#include "ui_util.hpp"
 
 struct tooltip
 {
@@ -1296,8 +1297,6 @@ struct command_manager : serialisable
 ///hmm. Maybe instead of networking state we should just network commands
 void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state)
 {
-    ImGui::Begin("Options", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
     ///ATTACKER ACTIONS:
     ///Draw card from lane deck if not protected
     ///Draw card from attacker deck
@@ -1317,72 +1316,19 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
     ///Inspect any face up defender stack
     ///Inspect own hand
 
-    /*static int lane_selected = 0;
-    static int is_faceup = false;
-    static int hand_card_offset = 0;*/
-
     static command to_exec;
 
-    ImGui::InputInt("Lane", &to_exec.lane_selected);
-    ImGui::InputInt("Face Up?", &to_exec.is_faceup);
-    ImGui::InputInt("Hand Card Number", &to_exec.hand_card_offset);
-
-    to_exec.is_faceup = clamp(to_exec.is_faceup, 0, 1);
-    //hand_card_offset = clamp(hand_card_offset, 0, current);
-
-    to_exec.lane_selected = clamp(to_exec.lane_selected, 0, 6);
-
-    ImGui::End();
-
     bool update = false;
+
+    bool your_turn = false;
 
     if((player == game_state::ATTACKER && basic_state.attacker_turn(sd, gs_id)) || player == game_state::OVERLORD)
     {
         ImGui::Begin("Attacker Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        if(ImGui::Button("Draw from Lane Deck"))
-        {
-            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
+        your_turn = true;
 
-            to_exec.to_exec = command::ATTACK_DRAW_LANE;
-            to_exec.pile = piles::LANE_DECK;
-            to_exec.player = game_state::ATTACKER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Draw From Attacker Deck"))
-        {
-            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
-
-            to_exec.to_exec = command::ATTACK_DRAW_DECK;
-            to_exec.pile = piles::ATTACKER_DECK;
-            to_exec.player = game_state::ATTACKER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Play to Stack"))
-        {
-            //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
-
-            to_exec.to_exec = command::ATTACK_PLAY_STACK;
-            to_exec.player = game_state::ATTACKER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Initiate Combat At Lane"))
-        {
-            //call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
-
-            to_exec.to_exec = command::ATTACK_INITIATE_COMBAT;
-            to_exec.player = game_state::ATTACKER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Pass"))
+        if(ImGui::Button("Pass Turn"))
         {
             to_exec.to_exec = command::PASS;
             to_exec.player = game_state::ATTACKER;
@@ -1396,37 +1342,9 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
     {
         ImGui::Begin("Defender Actions", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        if(ImGui::Button("Draw From Lane Deck"))
-        {
-            //call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
+        your_turn = true;
 
-            to_exec.to_exec = command::DEFENDER_DRAW_LANE;
-            to_exec.pile = piles::LANE_DECK;
-            to_exec.player = game_state::DEFENDER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Play to Stack"))
-        {
-            //call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
-
-            to_exec.to_exec = command::DEFENDER_PLAY_STACK;
-            to_exec.player = game_state::DEFENDER;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Discard Card to Lane Discard Pile"))
-        {
-            //call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
-
-            to_exec.to_exec = command::DEFENDER_DISCARD_TO;
-
-            update = true;
-        }
-
-        if(ImGui::Button("Pass"))
+        if(ImGui::Button("Pass Turn"))
         {
             to_exec.to_exec = command::PASS;
             to_exec.player = game_state::DEFENDER;
@@ -1440,16 +1358,19 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
 
     ImGui::Text(("Turn: " + std::to_string(basic_state.turn)).c_str());
 
+    if(your_turn)
+    {
+        ImGui::TextColored("It is your turn", {0.4, 1.f, 0.4f});
+    }
+    else
+    {
+        ImGui::TextColored("It is not your turn", {1.f, 0.4f, 0.4f});
+    }
+
     ImGui::End();
 
     if(update)
     {
-        //std::vector<game_state*> hack{&basic_state};
-
-        //card_updater.do_update_strategy(1.f, 0.0, hack, net_state, 0);
-
-        //to_exec.execute(sd, gs_id);
-
         commands.add(to_exec);
     }
 }
