@@ -1624,15 +1624,21 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
     }
 }
 
+struct net_player_state
+{
+    game_state::player_t role = game_state::SPECTATOR;
+    int game_id = -1;
+};
+
 struct player_info
 {
     sf::Clock disconnect_time;
 
-    int game_id = -1;
+    net_player_state net_info;
 
-    player_info(int id)
+    player_info(net_player_state ns)
     {
-        game_id = id;
+        net_info = ns;
     }
 
     player_info() = default;
@@ -1650,15 +1656,14 @@ struct player_info
 
 bool operator<(const player_info& p1, const player_info& p2)
 {
-    return p1.game_id < p2.game_id;
+    return p1.net_info.game_id < p2.net_info.game_id;
 }
 
 struct player_manager : serialisable
 {
     bool cleanup = false;
 
-    int my_id = -1;
-    game_state::player_t player = game_state::SPECTATOR;
+    net_player_state net_info;
 
     std::map<int, player_info> found_ids;
 
@@ -1671,7 +1676,7 @@ struct player_manager : serialisable
         if(!net_state.connected())
             return;
 
-        my_id = net_state.my_id;
+        net_info.game_id = net_state.my_id;
 
         std::vector<player_manager*> player_hack{this};
 
@@ -1682,30 +1687,50 @@ struct player_manager : serialisable
     {
         if(ser)
         {
-            s.handle_serialise(my_id, ser);
+            s.handle_serialise(net_info, ser);
         }
         else
         {
-            int val = 0;
+            net_player_state fstate;
 
-            s.handle_serialise(val, ser);
+            s.handle_serialise(fstate, ser);
 
-            player_info nplayer(val);
+            player_info nplayer(fstate);
+
+            int val = fstate.game_id;
 
             auto found = found_ids.find(val);
 
             if(found == found_ids.end())
             {
-                found_ids[val] = nplayer;
-
                 new_players = true;
             }
             else
             {
                 found_ids[val].restart();
             }
+
+            ///currently don't need persistance, alarm ALARM
+            found_ids[val] = nplayer;
         }
     }
+
+    void become_role(game_state::player_t player)
+    {
+        net_info.role = player;
+    }
+
+    bool have_role(game_state::player_t player)
+    {
+        for(auto& i : found_ids)
+        {
+            if(i.second.net_info.role == player)
+                return true;
+        }
+
+        return net_info.role == player;
+    }
+
 
     bool has_new_players()
     {
@@ -1726,7 +1751,7 @@ struct player_manager : serialisable
     {
         for(auto& i : found_ids)
         {
-            if(my_id > i.first)
+            if(net_info.game_id > i.first)
                 return false;
         }
 
@@ -1895,16 +1920,31 @@ int main(int argc, char* argv[])
 
             if(current_player == game_state::SPECTATOR)
             {
-                if(ImGui::Button("Lock Into Defender"))
+                std::string defender_txt = "Become Defender";
+                std::string attacker_txt = "Become Attacker";
+
+                if(player_manage.have_role(game_state::DEFENDER))
+                {
+                    defender_txt += " (Taken)";
+                }
+
+                if(player_manage.have_role(game_state::ATTACKER))
+                {
+                    attacker_txt += " (Taken)";
+                }
+
+                if(ImGui::Button(defender_txt.c_str()) && !player_manage.have_role(game_state::DEFENDER))
                 {
                     current_player = game_state::DEFENDER;
                     basic_state.set_viewer_state(game_state::DEFENDER);
+                    player_manage.become_role(game_state::DEFENDER);
                 }
 
-                if(ImGui::Button("Lock Into Attacker"))
+                if(ImGui::Button(attacker_txt.c_str()) && !player_manage.have_role(game_state::ATTACKER))
                 {
                     current_player = game_state::ATTACKER;
                     basic_state.set_viewer_state(game_state::ATTACKER);
+                    player_manage.become_role(game_state::ATTACKER);
                 }
             }
 
