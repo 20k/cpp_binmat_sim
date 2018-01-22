@@ -18,6 +18,20 @@ function(context, args)
         14:">",
 		15:"ERROR"}
 
+	var piles =
+	{
+		"LANE_DISCARD":0,
+		"LANE_DECK":1,
+		"DEFENDER_STACK":2,
+		"ATTACKER_STACK":3,
+
+        "ATTACKER_DECK":4,
+        "ATTACKER_DISCARD":5,
+        "ATTACKER_HAND":6,
+        "DEFENDER_HAND":7,
+        "COUNT":8
+	}
+
 	function card_make()
 	{
 		var card = new Object();
@@ -376,20 +390,6 @@ function(context, args)
 		}
 	}
 
-	var piles =
-	{
-		"LANE_DISCARD":0,
-		"LANE_DECK":1,
-		"DEFENDER_STACK":2,
-		"ATTACKER_STACK":3,
-
-        "ATTACKER_DECK":4,
-        "ATTACKER_DISCARD":5,
-        "ATTACKER_HAND":6,
-        "DEFENDER_HAND":7,
-        "COUNT":8
-	}
-
 	var piles_name =
 	[
 		"Lane Discard",
@@ -472,6 +472,11 @@ function(context, args)
 
         if(current_pile == piles["ATTACKER_STACK"])
             return gs.lanes[lane].card_piles[3];
+	}
+
+	function game_state_get_num_cards(gs, current_pile, lane)
+	{
+        return game_state_get_cards(gs, current_pile, lane).cards.length;
 	}
 
 	function game_state_reseat_cards(gs, current_pile, lane, new_cards)
@@ -1335,6 +1340,11 @@ function(context, args)
 
 			game_state_is_face_down:game_state_is_face_down,
 			game_state_is_face_up:game_state_is_face_up,
+
+			game_state_lane_protected:game_state_lane_protected,
+			game_state_get_num_cards:game_state_get_num_cards,
+
+			game_state_get_hand:game_state_get_hand,
 
 			get_string:get_string,
 			debug:debug,

@@ -1208,6 +1208,87 @@ struct command : serialisable
         return events;
     }
 
+    ///so
+    ///want to import bot state which generates a command
+    ///no networking involved whatsoever
+    static
+    command invoke_bot_command(stack_duk& sd, arg_idx bot_id, arg_idx gs_id, arg_idx globject, game_state::player_t player)
+    {
+        arg_idx result = call_function_from(sd, "on_turn", bot_id, gs_id, player, globject);
+
+        command ret;
+        ret.to_exec = command::PASS;
+
+        arg_idx short_type_arg = sd.get_prop_string(result, "type");
+        arg_idx lane_arg = sd.get_prop_string(result, "lane");
+        arg_idx pile_arg = sd.get_prop_string(result, "pile");
+
+        arg_idx is_faceup_arg  = sd.get_prop_string(result, "is_faceup");
+        arg_idx hand_card_offset_arg = sd.get_prop_string(result, "hand_card_offset");
+
+        int short_command = sd.get_int(short_type_arg);
+        int clane = sd.get_int(lane_arg);
+        int cpile = sd.get_int(pile_arg);
+        bool cis_faceup = sd.get_boolean(is_faceup_arg);
+        int chand_card_offset = sd.get_int(hand_card_offset_arg);
+
+        ret.lane_selected = clane;
+        ret.pile = (piles::piles_t)cpile;
+        ret.is_faceup = cis_faceup;
+        ret.hand_card_offset = chand_card_offset;
+        ret.player = player;
+
+        /*ATTACK_DRAW_LANE,
+        ATTACK_DRAW_DECK,
+        ATTACK_PLAY_STACK,
+        ATTACK_INITIATE_COMBAT,
+
+        DEFENDER_DRAW_LANE,
+        DEFENDER_PLAY_STACK,
+        DEFENDER_DISCARD_TO,*/
+
+        ///DRAW_FROM
+        if(short_command == 0 && player == game_state::ATTACKER && cpile == piles::LANE_DECK)
+        {
+            ret.to_exec = command::ATTACK_DRAW_LANE;
+        }
+
+        ///DRAW FROM
+        if(short_command == 0 && player == game_state::ATTACKER && cpile == piles::ATTACKER_DECK)
+        {
+            ret.to_exec = command::ATTACK_DRAW_DECK;
+        }
+
+        if(short_command == 1 && player == game_state::ATTACKER && cpile == piles::ATTACKER_STACK)
+        {
+            ret.to_exec = command::ATTACK_PLAY_STACK;
+        }
+
+        if(short_command == 2 && player == game_state::ATTACKER)
+        {
+            ret.to_exec = command::ATTACK_INITIATE_COMBAT;
+        }
+
+        if(short_command == 0 && player == game_state::DEFENDER && cpile == piles::LANE_DECK)
+        {
+            ret.to_exec = command::DEFENDER_DRAW_LANE;
+        }
+
+        if(short_command == 1 && player == game_state::DEFENDER && cpile == piles::DEFENDER_STACK)
+        {
+            ret.to_exec = command::DEFENDER_PLAY_STACK;
+        }
+
+        if(short_command == 1 && player == game_state::DEFENDER && cpile == piles::LANE_DISCARD)
+        {
+            ret.to_exec = command::DEFENDER_DISCARD_TO;
+        }
+
+        sd.pop_n(6);
+
+        return ret;
+    }
+
     virtual void do_serialise(serialise& s, bool ser)
     {
         s.handle_serialise(to_exec, ser);
@@ -1779,15 +1860,17 @@ int main(int argc, char* argv[])
     stack_duk sd;
     init_js_interop(sd);
 
-    arg_idx bot_idx(-1);
+    arg_idx bot_id(-1);
 
     if(is_bot)
     {
         std::string jsfile = read_file(bot_js);
 
         register_function(sd, jsfile, "botjs");
-        bot_idx = call_global_function(sd, "botjs");
+        bot_id = call_global_function(sd, "botjs");
     }
+
+    arg_idx global_object = sd.push_global_object();
 
     arg_idx gs_id = call_function_from_absolute(sd, "game_state_make");
     arg_idx cm_id = call_function_from_absolute(sd, "card_manager_make");
@@ -1850,6 +1933,13 @@ int main(int argc, char* argv[])
         do_ui(sd, gs_id, commands, current_player, basic_state);
 
         do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y}, ui_state);
+
+        if(is_bot && basic_state.can_act(current_player, sd, gs_id))
+        {
+            command c = command::invoke_bot_command(sd, bot_id, gs_id, global_object, current_player);
+
+            commands.add(c);
+        }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
 
