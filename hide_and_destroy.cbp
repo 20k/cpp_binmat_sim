@@ -47,6 +47,7 @@
 			<Add option="-std=c++17" />
 			<Add option="-Wno-narrowing" />
 			<Add option="-DNET_CLIENT" />
+			<Add option="-DNO_COMPRESSION" />
 		</Compiler>
 		<Linker>
 			<Add option="-lmingw32" />
