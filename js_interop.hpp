@@ -11,6 +11,13 @@ static duk_ret_t native_print(duk_context *ctx) {
 	return 0;
 }
 
+static duk_ret_t native_sleep(duk_context* ctx)
+{
+    Sleep(1);
+
+    return 0;
+}
+
 std::string read_file(const std::string& file)
 {
     FILE *f = fopen(file.c_str(), "rb");
@@ -26,9 +33,12 @@ std::string read_file(const std::string& file)
     return buffer;
 }
 
-void print_register(duk_context *ctx) {
+void native_register(duk_context *ctx) {
 	duk_push_c_function(ctx, native_print, DUK_VARARGS);
 	duk_put_global_string(ctx, "print");
+
+	duk_push_c_function(ctx, native_sleep, 0);
+	duk_put_global_string(ctx, "sleep");
 }
 
 void debug_stack(duk_context* ctx)
@@ -323,7 +333,7 @@ duk_context* js_interop_startup()
 {
     duk_context *ctx = duk_create_heap_default();
 
-    print_register(ctx);
+    native_register(ctx);
 
     return ctx;
 }

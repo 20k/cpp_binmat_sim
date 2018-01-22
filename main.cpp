@@ -2111,6 +2111,17 @@ int main(int argc, char* argv[])
 
         window.display();
 
+        /*call_function_from_absolute(sd, "illegal_sleep");
+        sd.pop_n(1);
+
+        duk_thread_state st;
+        duk_suspend(sd.ctx, &st);
+
+        Sleep(1);
+        serialise::sleep_thread_pool();
+
+        duk_resume(sd.ctx, &st);*/
+
         Sleep(1);
 
         window.clear();
