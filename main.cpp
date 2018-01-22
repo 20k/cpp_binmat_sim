@@ -1089,20 +1089,41 @@ struct command : serialisable
     int is_faceup = false;
     int hand_card_offset = 0;
 
+    bool check_success(stack_duk& sd, arg_idx result)
+    {
+        bool success = true;
+
+        if(sd.has_prop_string(result, "ok"))
+        {
+            arg_idx ok_id = sd.get_prop_string(result, "ok");
+
+            success = sd.get_boolean(ok_id);
+
+            sd.pop_n(1);
+        }
+
+        return success;
+    }
+
     std::string execute(stack_duk& sd, arg_idx gs_id)
     {
         std::string events = "";
+        bool success = true;
 
         if(to_exec == ATTACK_DRAW_LANE)
         {
-            call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
+            arg_idx result = call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::ATTACKER);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_DRAW_DECK)
         {
-            call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
+            arg_idx result = call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::ATTACKER_DECK, -1, (int)game_state::ATTACKER);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
@@ -1111,7 +1132,9 @@ struct command : serialisable
         {
             arg_idx result = call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::ATTACKER, lane_selected, hand_card_offset, is_faceup);
 
-            if(sd.has_prop_string(result, "events"))
+            success = check_success(sd, result);
+
+            if(success && sd.has_prop_string(result, "events"))
             {
                 arg_idx event_str_id = sd.get_prop_string(result, "events");
 
@@ -1128,7 +1151,9 @@ struct command : serialisable
         {
             arg_idx result = call_function_from_absolute(sd, "game_state_try_trigger_combat", gs_id, (int)game_state::ATTACKER, lane_selected);
 
-            if(sd.has_prop_string(result, "events"))
+            success = check_success(sd, result);
+
+            if(success && sd.has_prop_string(result, "events"))
             {
                 arg_idx event_str_id = sd.get_prop_string(result, "events");
 
@@ -1141,24 +1166,29 @@ struct command : serialisable
         }
 
 
-
         if(to_exec == DEFENDER_DRAW_LANE)
         {
-            call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
+            arg_idx result = call_function_from_absolute(sd, "game_state_draw_from", gs_id, (int)piles::LANE_DECK, lane_selected, (int)game_state::DEFENDER);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_PLAY_STACK)
         {
-            call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+            arg_idx result = call_function_from_absolute(sd, "game_state_play_to_stack_from_hand", gs_id, (int)game_state::DEFENDER, lane_selected, hand_card_offset, is_faceup);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_DISCARD_TO)
         {
-            call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
+            arg_idx result = call_function_from_absolute(sd, "game_state_discard_hand_to_lane_discard", gs_id, lane_selected, hand_card_offset);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
@@ -1168,9 +1198,12 @@ struct command : serialisable
 
         }
 
-        call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
+        if(success)
+        {
+            call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
 
-        sd.pop_n(1);
+            sd.pop_n(1);
+        }
 
         return events;
     }
