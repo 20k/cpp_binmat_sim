@@ -1985,9 +1985,9 @@ int main(int argc, char* argv[])
 
         ImGui::Text(("Others Connected: " + std::to_string(player_manage.connected_count())).c_str());
 
-        if(!player_manage.is_host && player_manage.can_host)
+        if(!player_manage.is_host && player_manage.can_host && net_state.connected())
         {
-            if(ImGui::Button("Host"))
+            if(ImGui::Button("Host (1 person click this after joining a server)"))
             {
                 player_manage.is_host = true;
             }
@@ -2044,7 +2044,7 @@ int main(int argc, char* argv[])
 
         for(int i=0; i < network_servers.size(); i++)
         {
-            if(!net_state.connected_to(i) && ImGui::Button("Join:"))
+            if(!net_state.connected_to(i) && ImGui::Button(("Join:##" + std::to_string(i)).c_str()))
             {
                 net_state.try_join_server(i);
             }
@@ -2059,6 +2059,11 @@ int main(int argc, char* argv[])
             ImGui::Text((network_servers[i]).c_str());
 
             //ImGui::Button((network_servers[i]).c_str());
+        }
+
+        if(ImGui::Button("Leave"))
+        {
+            net_state.leave_game();
         }
 
         ImGui::End();
