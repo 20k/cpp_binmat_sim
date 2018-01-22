@@ -1722,6 +1722,20 @@ struct player_manager : serialisable
 ///oh and keepalive
 int main(int argc, char* argv[])
 {
+    bool is_bot = false;
+    std::string bot_js = "bot.js";
+
+    for(int i=1; i<argc; i++)
+    {
+        if(strncmp(argv[i], "-bot", strlen("-bot")) == 0)
+        {
+            if(i + 1 < argc)
+            {
+                bot_js = argv[i+1];
+            }
+        }
+    }
+
     networking_init();
     network_state net_state;
     net_state.reliable_ordered.init_client();

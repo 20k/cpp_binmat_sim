@@ -305,12 +305,35 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
     if(ret != DUK_EXEC_SUCCESS)
     {
         printf("error: %s\n", duk_safe_to_string(sd.ctx, -1));
-
-        sd.pop_n(1);
     }
 
     sd.load();
 
+    sd.inc();
+
+    return arg_idx(sd.stack_val - 1);
+}
+
+template<typename... T>
+arg_idx call_function_from(stack_duk& sd, const std::string& name, arg_idx from, T... arg_offsets)
+{
+    sd.save();
+
+    sd.get_prop_string(from, name);
+
+    set_args(sd, arg_offsets...);
+
+    int len = sizeof...(arg_offsets);
+
+    int ret = duk_pcall(sd.ctx, len);
+
+    if(ret != DUK_EXEC_SUCCESS)
+    {
+        printf("error: %s\n", duk_safe_to_string(sd.ctx, -1));
+    }
+
+
+    sd.load();
     sd.inc();
 
     return arg_idx(sd.stack_val - 1);
