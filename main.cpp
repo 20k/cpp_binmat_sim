@@ -987,32 +987,33 @@ struct game_state : serialisable
         return valid;
     }
 
-    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, card& c, int card_list_face_up)
+    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, card& c, int card_list_face_up, int size_of_card_list, int turn)
     {
-        call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)c.card_type, (int)c.suit_type, (bool)c.face_down, (bool)card_list_face_up);
+        call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)c.card_type, (int)c.suit_type, (bool)c.face_down, (bool)card_list_face_up, (int)size_of_card_list, (int)turn);
 
         sd.pop_n(1);
     }
 
     void propagate_lane_decks_to_js(stack_duk& sd, arg_idx gs_id)
     {
-        piles::piles_t pile = piles::LANE_DECK;
+        //piles::piles_t pile = piles::LANE_DECK;
 
-        printf("propagating\n");
+        printf("propagate\n");
 
-        for(int lane=0; lane < NUM_LANES; lane++)
+        for(int pile = 0; pile < piles::COUNT; pile++)
         {
-            card_list& cards = get_cards(pile, lane);
-
-            printf("in lane %i\n", cards.cards.size());
-
-            for(int c=0; c < cards.cards.size(); c++)
+            for(int lane=0; lane < NUM_LANES; lane++)
             {
-                set_card(sd, gs_id, pile, lane, c, cards.cards[c], cards.face_up);
+                card_list& cards = get_cards((piles::piles_t)pile, lane);
 
-                if(!cards.cards[c].face_down)
+                for(int c=0; c < cards.cards.size(); c++)
                 {
-                    std::cout << "fup " << cards.cards[c].get_string() << std::endl;
+                    set_card(sd, gs_id, (piles::piles_t)pile, lane, c, cards.cards[c], cards.face_up, cards.cards.size(), turn);
+
+                    if(!cards.cards[c].face_down)
+                    {
+                        std::cout << "fup " << cards.cards[c].get_string() << std::endl;
+                    }
                 }
             }
         }

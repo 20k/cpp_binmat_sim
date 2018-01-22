@@ -1291,14 +1291,16 @@ function(context, args)
 		}
 	}
 
-	function game_state_set_card(gs, pile, lane, card_offset, type, suit, face_down, card_list_face_up)
+	function game_state_set_card(gs, pile, lane, card_offset, type, suit, face_down, card_list_face_up, size_of_card_list, turn)
 	{
         var cards = game_state_get_cards(gs, pile, lane);
 
-        for(var i=cards.cards.length; i < card_offset; i++)
+        for(var i=cards.cards.length; i < size_of_card_list; i++)
         {
             cards.cards.push(card_make());
         }
+
+        cards.cards.length = size_of_card_list;
 
         cards.face_up = card_list_face_up;
 
@@ -1307,6 +1309,8 @@ function(context, args)
         card.face_down = face_down;
 		card.suit_type = suit;
 		card.card_type = type;
+
+		gs.turn = turn;
 	}
 
 	function game_state_inc_turn(gs)
