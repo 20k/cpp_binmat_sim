@@ -222,7 +222,7 @@ struct stack_duk
 
 arg_idx call_global_function(stack_duk& sd, const std::string& name)
 {
-    sd.save();
+    //sd.save();
 
     sd.push_global_object();
 
@@ -230,9 +230,14 @@ arg_idx call_global_function(stack_duk& sd, const std::string& name)
 
     sd.call(0);
 
-    sd.load();
+    ///call and get prop str both inc, but call removes one item off stack
+    //sd.pop_n(1);
 
-    sd.inc();
+    //sd.stack_val--;
+
+    //sd.load();
+
+    //sd.inc();
 
     return arg_idx(sd.stack_val-1);
 }
@@ -344,11 +349,15 @@ void register_function(stack_duk& sd, const std::string& function_str, const std
     std::string test_js = "var global = new Function(\'return this;\')();\n"
                           "global." + function_name + " = " + function_str + ";\n";//\n print(global.test)"
 
+    //std::cout << "TEST " << test_js << "\n\n\n" << std::endl;
+
     int pc = duk_peval_string(sd.ctx, test_js.c_str());
+    sd.inc();
 
     if(pc)
     {
         printf("eval failed: %s\n", duk_safe_to_string(sd.ctx, -1));
+        exit(0);
     }
 }
 

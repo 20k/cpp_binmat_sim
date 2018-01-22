@@ -1723,17 +1723,24 @@ struct player_manager : serialisable
 int main(int argc, char* argv[])
 {
     bool is_bot = false;
-    std::string bot_js = "bot.js";
+    std::string bot_js = "bots/bot.js";
 
     for(int i=1; i<argc; i++)
     {
         if(strncmp(argv[i], "-bot", strlen("-bot")) == 0)
         {
+            is_bot = true;
+
             if(i + 1 < argc)
             {
                 bot_js = argv[i+1];
             }
         }
+    }
+
+    if(is_bot)
+    {
+        std::cout << "I am a bot\n";
     }
 
     networking_init();
@@ -1771,6 +1778,16 @@ int main(int argc, char* argv[])
 
     stack_duk sd;
     init_js_interop(sd);
+
+    arg_idx bot_idx(-1);
+
+    if(is_bot)
+    {
+        std::string jsfile = read_file(bot_js);
+
+        register_function(sd, jsfile, "botjs");
+        bot_idx = call_global_function(sd, "botjs");
+    }
 
     arg_idx gs_id = call_function_from_absolute(sd, "game_state_make");
     arg_idx cm_id = call_function_from_absolute(sd, "card_manager_make");
