@@ -290,6 +290,19 @@ function(context, args)
 		}
 	}
 
+	function card_list_prune_to_face_down(cl)
+	{
+		for(var i = 0; i < cl.cards.length; i++)
+		{
+			if(card_is_face_up(cl.cards[i]))
+			{
+				cl.cards.splice(i, 1);
+				i--;
+				continue;
+			}
+		}
+	}
+
 	function card_list_only_top(cl)
 	{
 		var new_cl = card_list_make();
@@ -746,6 +759,19 @@ function(context, args)
 		if(player == player_t["DEFENDER"])
 		{
 			return game_state_get_cards(gs, piles["DEFENDER_STACK"], lane);
+		}
+	}
+
+	function game_state_get_visible_lane_stack_for_player(gs, player, lane)
+	{
+        if(player == player_t["ATTACKER"])
+		{
+			return game_state_get_visible_pile_cards_as(gs, piles["ATTACKER_STACK"], player, lane)
+		}
+
+		if(player == player_t["DEFENDER"])
+		{
+			return game_state_get_visible_pile_cards_as(gs, piles["DEFENDER_STACK"], player, lane);
 		}
 	}
 
@@ -1343,6 +1369,7 @@ function(context, args)
 
 			game_state_lane_protected:game_state_lane_protected,
 			game_state_get_num_cards:game_state_get_num_cards,
+			game_state_get_visible_lane_stack_for_player:game_state_get_visible_lane_stack_for_player,
 
 			game_state_get_hand:game_state_get_hand,
 
@@ -1352,6 +1379,10 @@ function(context, args)
 			game_state_inc_turn:game_state_inc_turn,
 
 			game_state_set_card:game_state_set_card,
+
+			card_list_calculate_stack_damage:card_list_calculate_stack_damage,
+			card_list_prune_to_face_down:card_list_prune_to_face_down,
+			card_list_clone:card_list_clone,
 
 			piles_is_lane_type:piles_is_lane_type,
 			piles:piles,

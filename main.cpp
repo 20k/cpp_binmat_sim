@@ -1219,6 +1219,13 @@ struct command : serialisable
         command ret;
         ret.to_exec = command::PASS;
 
+        if(!sd.has_prop_string(result, "type"))
+        {
+            sd.pop_n(1);
+
+            return ret;
+        }
+
         arg_idx short_type_arg = sd.get_prop_string(result, "type");
         arg_idx lane_arg = sd.get_prop_string(result, "lane");
         arg_idx pile_arg = sd.get_prop_string(result, "pile");
@@ -2030,44 +2037,6 @@ int main(int argc, char* argv[])
 
         ImGui::End();
 
-        basic_state.render(window, basic_state.viewer);
-
-        card_list visible_to = basic_state.get_all_visible_cards(basic_state.viewer);
-
-        //card_list& astack = basic_state.get_cards(piles::ATTACKER_DISCARD, -1);
-        //printf("%i astack %i fstack\n", astack.cards.size(), visible_to.cards.size());
-
-        std::deque<std::string> reversed;
-
-        if(visible_to.cards.size() > 0)
-        {
-            for(card& c : visible_to.cards)
-            {
-                if(c.is_within({mpos.x, mpos.y}))
-                {
-                    std::string face_up = " F-UP";
-                    std::string face_down = " F-DOWN";
-
-                    std::string str = c.face_down ? face_down : face_up;
-
-                    reversed.push_back(c.get_string() + str);
-                }
-            }
-        }
-
-        if(reversed.size() > 0)
-        {
-            //reversed.push_front("BOTTOM");
-            reversed.push_back("Stack Top");
-        }
-
-        std::reverse(reversed.begin(), reversed.end());
-
-        for(auto& i : reversed)
-        {
-            tooltip::add(i);
-        }
-
         net_state.tick(diff_s);
 
         ///if turn taken, do network updater
@@ -2134,6 +2103,50 @@ int main(int argc, char* argv[])
 
                 //handle_unprocessed();
             }
+        }
+
+        basic_state.import_state_from_js(sd, gs_id);
+
+        events = commands.exec_all(sd, gs_id, ui_state);
+
+        if(events.size() != 0)
+        {
+            last_events = events;
+        }
+
+        basic_state.render(window, basic_state.viewer);
+
+        card_list visible_to = basic_state.get_all_visible_cards(basic_state.viewer);
+
+        std::deque<std::string> reversed;
+
+        if(visible_to.cards.size() > 0)
+        {
+            for(card& c : visible_to.cards)
+            {
+                if(c.is_within({mpos.x, mpos.y}))
+                {
+                    std::string face_up = " F-UP";
+                    std::string face_down = " F-DOWN";
+
+                    std::string str = c.face_down ? face_down : face_up;
+
+                    reversed.push_back(c.get_string() + str);
+                }
+            }
+        }
+
+        if(reversed.size() > 0)
+        {
+            //reversed.push_front("BOTTOM");
+            reversed.push_back("Stack Top");
+        }
+
+        std::reverse(reversed.begin(), reversed.end());
+
+        for(auto& i : reversed)
+        {
+            tooltip::add(i);
         }
 
         ImGui::Begin("Networking", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
