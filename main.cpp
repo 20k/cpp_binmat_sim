@@ -4,12 +4,12 @@
 #include <imgui/imgui-SFML.h>
 #include <imgui/imgui_internal.h>
 #include <vec/vec.hpp>
-#include "../serialise/serialise.hpp"
+#include <serialise/serialise.hpp>
 #include "manager.hpp"
 #include <math.h>
 #include "font_renderer.hpp"
 //#include "network_updater.hpp"
-#include "../4space_server/networking.hpp"
+#include <4space_server/networking.hpp>
 
 #define CARD_WIDTH 25
 #define CARD_HEIGHT CARD_WIDTH * 1.7

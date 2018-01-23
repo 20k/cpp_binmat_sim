@@ -48,6 +48,7 @@
 			<Add option="-Wno-narrowing" />
 			<Add option="-DNET_CLIENT" />
 			<Add option="-DNO_COMPRESSION" />
+			<Add directory="deps" />
 		</Compiler>
 		<Linker>
 			<Add option="-lmingw32" />
@@ -69,11 +70,9 @@
 			<Add after="post_build.bat" />
 			<Mode after="always" />
 		</ExtraCommands>
-		<Unit filename="../4space_server/networking.cpp" />
-		<Unit filename="../4space_server/networking.hpp" />
-		<Unit filename="../serialise/serialise.cpp" />
-		<Unit filename="../serialise/serialise.hpp" />
 		<Unit filename="binmat_sim.js" />
+		<Unit filename="deps/4space_server/networking.cpp" />
+		<Unit filename="deps/serialise/serialise.cpp" />
 		<Unit filename="font_renderer.hpp" />
 		<Unit filename="js_interop.hpp" />
 		<Unit filename="main.cpp" />
