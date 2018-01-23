@@ -1237,9 +1237,9 @@ struct command : serialisable
     ///want to import bot state which generates a command
     ///no networking involved whatsoever
     static
-    command invoke_bot_command(stack_duk& sd, arg_idx bot_id, arg_idx gs_id, arg_idx globject, game_state::player_t player)
+    command invoke_bot_command(stack_duk& sd, arg_idx bot_id, arg_idx gs_id, arg_idx base_id, game_state::player_t player)
     {
-        arg_idx result = call_function_from(sd, "on_turn", bot_id, gs_id, player, globject);
+        arg_idx result = call_function_from(sd, "on_turn", bot_id, gs_id, player, base_id);
 
         command ret;
         ret.to_exec = command::PASS;
@@ -1990,9 +1990,13 @@ int main(int argc, char* argv[])
 
         if(is_bot && basic_state.can_act(current_player, sd, gs_id))
         {
-            command c = command::invoke_bot_command(sd, bot_id, gs_id, global_object, current_player);
+            arg_idx mainfunc = call_function_from(sd, "mainfunc", global_object);
+
+            command c = command::invoke_bot_command(sd, bot_id, gs_id, mainfunc, current_player);
 
             commands.add(c);
+
+            sd.pop_n(1);
         }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
