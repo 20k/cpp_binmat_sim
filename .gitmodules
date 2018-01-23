@@ -1,0 +1,15 @@
+[submodule "4space_server"]
+	path = 4space_server
+	url = https://github.com/20k/4space_server
+[submodule "deps/4space_server"]
+	path = deps/4space_server
+	url = https://github.com/20k/4space_server
+[submodule "deps/vec"]
+	path = deps/vec
+	url = https://github.com/20k/funvectormaths
+[submodule "deps/net"]
+	path = deps/net
+	url = https://github.com/20k/crappynetworking
+[submodule "deps/serialise"]
+	path = deps/serialise
+	url = https://github.com/20k/funserialisation
