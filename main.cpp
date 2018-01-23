@@ -1113,6 +1113,11 @@ struct command : serialisable
             sd.pop_n(1);
         }
 
+        if(sd.has_prop_string(result, "win"))
+        {
+            printf("Someone Won\n");
+        }
+
         return success;
     }
 
