@@ -1071,6 +1071,7 @@ struct command : serialisable
         ATTACK_DRAW_DECK,
         ATTACK_PLAY_STACK,
         ATTACK_INITIATE_COMBAT,
+        ATTACK_DISCARD,
 
         DEFENDER_DRAW_LANE,
         DEFENDER_PLAY_STACK,
@@ -1161,6 +1162,15 @@ struct command : serialisable
 
                 sd.pop_n(1);
             }
+
+            sd.pop_n(1);
+        }
+
+        if(to_exec == ATTACK_DISCARD)
+        {
+            arg_idx result = call_function_from_absolute(sd, "game_state_attacker_discard", gs_id, hand_card_offset);
+
+            success = check_success(sd, result);
 
             sd.pop_n(1);
         }
@@ -1276,6 +1286,11 @@ struct command : serialisable
             ret.to_exec = command::ATTACK_INITIATE_COMBAT;
         }
 
+        if(short_command == 1 && player == game_state::ATTACKER && cpile == piles::ATTACKER_DECK)
+        {
+            ret.to_exec = command::ATTACK_DISCARD;
+        }
+
         if(short_command == 0 && player == game_state::DEFENDER && cpile == piles::LANE_DECK)
         {
             ret.to_exec = command::DEFENDER_DRAW_LANE;
@@ -1345,6 +1360,11 @@ struct seamless_ui_state
         if(pile == piles::ATTACKER_DECK)
         {
             c.to_exec = command::ATTACK_DRAW_DECK;
+        }
+
+        if(pile == piles::ATTACKER_DISCARD)
+        {
+            c.to_exec = command::ATTACK_DISCARD;
         }
 
         if(pile == piles::LANE_DISCARD)
@@ -1533,6 +1553,7 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
         return;
 
     card_list& attacker_deck = basic_state.get_cards(piles::ATTACKER_DECK, -1);
+    card_list& attacker_discard = basic_state.get_cards(piles::ATTACKER_DISCARD, -1);
 
     if(player == game_state::ATTACKER && attacker_deck.is_within(mpos))
     {
@@ -1548,6 +1569,17 @@ void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, gam
             to_exec.lane_selected = -1;
 
             commands.add(to_exec);
+        }
+    }
+
+    if(player == game_state::ATTACKER && attacker_discard.is_within(mpos))
+    {
+        tooltip::add("Select discard pile (discard for 2 cards)");
+
+        if(ImGui::IsMouseClicked(0))
+        {
+            ui_state.pile = piles::ATTACKER_DISCARD;
+            ui_state.pile_selected = true;
         }
     }
 

@@ -1295,6 +1295,30 @@ function(context, args)
 		return {ok:true};
 	}
 
+	function game_state_attacker_discard(gs, card_offset)
+	{
+        var discard = game_state_get_cards(gs, piles["ATTACKER_DISCARD"], -1);
+
+		var hand = game_state_get_cards(gs, piles["ATTACKER_HAND"], -1);
+
+		if(card_offset < 0 || card_offset >= hand.cards.length)
+			return {ok:false};
+
+		var c = hand.cards[card_offset];
+
+		card_list_remove_card(hand, c);
+
+		c.face_down = false;
+
+		discard.cards.push(c);
+
+		///draw 2 cards
+        game_state_draw_from(gs, piles["ATTACKER_DECK"], -1, player_t["ATTACKER"]);
+        game_state_draw_from(gs, piles["ATTACKER_DECK"], -1, player_t["ATTACKER"]);
+
+		return {ok:true};
+	}
+
 	function is_defender_turn(gs)
 	{
 		return (gs.turn % 2) == 0;
@@ -1370,6 +1394,8 @@ function(context, args)
 			game_state_lane_protected:game_state_lane_protected,
 			game_state_get_num_cards:game_state_get_num_cards,
 			game_state_get_visible_lane_stack_for_player:game_state_get_visible_lane_stack_for_player,
+
+			game_state_attacker_discard:game_state_attacker_discard,
 
 			game_state_get_hand:game_state_get_hand,
 
