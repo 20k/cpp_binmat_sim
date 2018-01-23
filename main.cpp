@@ -987,9 +987,9 @@ struct game_state : serialisable
         return valid;
     }
 
-    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, card& c, int card_list_face_up, int size_of_card_list, int turn)
+    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, int card_type, int suit_type, bool face_down , int card_list_face_up, int size_of_card_list, int turn)
     {
-        call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)c.card_type, (int)c.suit_type, (bool)c.face_down, (bool)card_list_face_up, (int)size_of_card_list, (int)turn);
+        call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)card_type, (int)suit_type, (bool)face_down, (bool)card_list_face_up, (int)size_of_card_list, (int)turn);
 
         sd.pop_n(1);
     }
@@ -1006,9 +1006,14 @@ struct game_state : serialisable
             {
                 card_list& cards = get_cards((piles::piles_t)pile, lane);
 
+                if(cards.cards.size() == 0)
+                    set_card(sd, gs_id, (piles::piles_t)pile, lane, 0, 0, 0, false, cards.face_up, cards.cards.size(), turn);
+
                 for(int c=0; c < cards.cards.size(); c++)
                 {
-                    set_card(sd, gs_id, (piles::piles_t)pile, lane, c, cards.cards[c], cards.face_up, cards.cards.size(), turn);
+                    card fc = cards.cards[c];
+
+                    set_card(sd, gs_id, (piles::piles_t)pile, lane, c, fc.card_type, fc.suit_type, fc.face_down, cards.face_up, cards.cards.size(), turn);
 
                     if(!cards.cards[c].face_down)
                     {
@@ -1099,6 +1104,11 @@ struct command : serialisable
             arg_idx ok_id = sd.get_prop_string(result, "ok");
 
             success = sd.get_boolean(ok_id);
+
+            if(!success)
+            {
+                printf("Bad Move\n");
+            }
 
             sd.pop_n(1);
         }

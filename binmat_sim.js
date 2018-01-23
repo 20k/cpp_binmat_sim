@@ -1178,6 +1178,10 @@ function(context, args)
 				continue;
 			}
 
+			card_list_steal_all(attacker_discard, attacker_stack);
+
+			events += "Attacker WINS match\n";
+
 			return {ok:true, win:true, events:events}
 		}
 
@@ -1359,11 +1363,14 @@ function(context, args)
 
         cards.face_up = card_list_face_up;
 
-        var card = cards.cards[card_offset];
+        if(card_offset < cards.cards.length)
+        {
+            var card = cards.cards[card_offset];
 
-        card.face_down = face_down;
-		card.suit_type = suit;
-		card.card_type = type;
+            card.face_down = face_down;
+            card.suit_type = suit;
+            card.card_type = type;
+        }
 
 		gs.turn = turn;
 	}
