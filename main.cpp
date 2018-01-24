@@ -300,7 +300,7 @@ struct card_list : serialisable
 
     bool face_up = false;
 
-    arg_idx javascript_id = arg_idx(-1);
+    //arg_idx javascript_id = arg_idx(-1);
 
     trans info;
 
@@ -866,13 +866,13 @@ struct game_state : serialisable
         viewer = player;
     }
 
-    card_list build(stack_duk& sd, arg_idx card_list_id)
+    card_list build(stack_duk& sd, arg_idx& card_list_id)
     {
         card_list ret;
 
         arg_idx face_up_id = sd.get_prop_string(card_list_id, "face_up");
 
-        bool is_face_up = duk_get_boolean(sd.ctx, -1);
+        bool is_face_up = sd.get_boolean(face_up_id);
 
         arg_idx cards_id = sd.get_prop_string(card_list_id, "cards");
 
@@ -893,24 +893,26 @@ struct game_state : serialisable
 
             c.face_down = sd.get_boolean(face_down_id);
 
-            sd.pop_n(4);
+            //sd.pop_n(4);
 
             ret.cards.push_back(c);
         }
 
-        sd.pop_n(2);
+        //sd.pop_n(2);
 
-        ret.javascript_id = card_list_id;
+        //ret.javascript_id = card_list_id;
         ret.face_up = is_face_up;
 
         return ret;
     }
 
-    void import_state_from_js(stack_duk& sd, arg_idx gs_id)
+    void import_state_from_js(stack_duk& sd, arg_idx& gs_id)
     {
         arg_idx turns_id = sd.get_prop_string(gs_id, "turn");
 
-        turn = duk_get_int(sd.ctx, -1);
+        //turn = duk_get_int(sd.ctx, -1);
+
+        turn = sd.get_int(turns_id);
 
         arg_idx piles_id = sd.get_prop_string(gs_id, "piles");
 
@@ -926,10 +928,10 @@ struct game_state : serialisable
 
             piles[i] = found;
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
-        sd.pop_n(2);
+        //sd.pop_n(2);
 
         arg_idx lanes_id = sd.get_prop_string(gs_id, "lanes");
 
@@ -955,46 +957,46 @@ struct game_state : serialisable
 
                 lanes[i].card_piles[kk] = found;
 
-                sd.pop_n(1);
+                //sd.pop_n(1);
             }
 
-            sd.pop_n(2);
+            //sd.pop_n(2);
 
         }
 
-        sd.pop_n(1);
+        //sd.pop_n(1);
     }
 
-    bool attacker_turn(stack_duk& sd, arg_idx gs_id)
+    bool attacker_turn(stack_duk& sd, arg_idx& gs_id)
     {
         arg_idx id = call_function_from_absolute(sd, "is_attacker_turn", gs_id);
 
         bool valid = sd.get_boolean(id);
 
-        sd.pop_n(1);
+        //sd.pop_n(1);
 
         return valid;
     }
 
-    bool defender_turn(stack_duk& sd, arg_idx gs_id)
+    bool defender_turn(stack_duk& sd, arg_idx& gs_id)
     {
         arg_idx id = call_function_from_absolute(sd, "is_defender_turn", gs_id);
 
         bool valid = sd.get_boolean(id);
 
-        sd.pop_n(1);
+        //sd.pop_n(1);
 
         return valid;
     }
 
-    void set_card(stack_duk& sd, arg_idx gs_id, piles::piles_t pile, int lane, int card_offset, int card_type, int suit_type, bool face_down , int card_list_face_up, int size_of_card_list, int turn)
+    void set_card(stack_duk& sd, arg_idx& gs_id, piles::piles_t pile, int lane, int card_offset, int card_type, int suit_type, bool face_down, int card_list_face_up, int size_of_card_list, int turn)
     {
         call_function_from_absolute(sd, "game_state_set_card", gs_id, (int)pile, lane, card_offset, (int)card_type, (int)suit_type, (bool)face_down, (bool)card_list_face_up, (int)size_of_card_list, (int)turn);
 
-        sd.pop_n(1);
+        //sd.pop_n(1);
     }
 
-    void propagate_lane_decks_to_js(stack_duk& sd, arg_idx gs_id)
+    void propagate_lane_decks_to_js(stack_duk& sd, arg_idx& gs_id)
     {
         //piles::piles_t pile = piles::LANE_DECK;
 
@@ -1025,7 +1027,7 @@ struct game_state : serialisable
     }
 
 
-    bool can_act(player_t player, stack_duk& sd, arg_idx gs_id)
+    bool can_act(player_t player, stack_duk& sd, arg_idx& gs_id)
     {
         if(player == DEFENDER && defender_turn(sd, gs_id))
             return true;
@@ -1095,7 +1097,7 @@ struct command : serialisable
     int is_faceup = false;
     int hand_card_offset = 0;
 
-    bool check_success(stack_duk& sd, arg_idx result)
+    bool check_success(stack_duk& sd, arg_idx& result)
     {
         bool success = true;
 
@@ -1110,7 +1112,7 @@ struct command : serialisable
                 printf("Bad Move\n");
             }
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(sd.has_prop_string(result, "win"))
@@ -1121,7 +1123,7 @@ struct command : serialisable
         return success;
     }
 
-    std::string execute(stack_duk& sd, arg_idx gs_id)
+    std::string execute(stack_duk& sd, arg_idx& gs_id)
     {
         std::string events = "";
         bool success = true;
@@ -1132,7 +1134,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_DRAW_DECK)
@@ -1141,7 +1143,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_PLAY_STACK)
@@ -1156,10 +1158,10 @@ struct command : serialisable
 
                 events = sd.get_string(event_str_id);
 
-                sd.pop_n(1);
+                //sd.pop_n(1);
             }
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
 
@@ -1175,10 +1177,10 @@ struct command : serialisable
 
                 events = sd.get_string(event_str_id);
 
-                sd.pop_n(1);
+                //sd.pop_n(1);
             }
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == ATTACK_DISCARD)
@@ -1187,7 +1189,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
 
@@ -1197,7 +1199,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_PLAY_STACK)
@@ -1206,7 +1208,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == DEFENDER_DISCARD_TO)
@@ -1215,7 +1217,7 @@ struct command : serialisable
 
             success = check_success(sd, result);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         if(to_exec == PASS)
@@ -1227,7 +1229,7 @@ struct command : serialisable
         {
             call_function_from_absolute(sd, "game_state_inc_turn", gs_id);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         return events;
@@ -1237,7 +1239,7 @@ struct command : serialisable
     ///want to import bot state which generates a command
     ///no networking involved whatsoever
     static
-    command invoke_bot_command(stack_duk& sd, arg_idx bot_id, arg_idx gs_id, arg_idx base_id, game_state::player_t player)
+    command invoke_bot_command(stack_duk& sd, arg_idx& bot_id, arg_idx& gs_id, arg_idx& base_id, game_state::player_t player)
     {
         arg_idx result = call_function_from(sd, "on_turn", bot_id, gs_id, player, base_id);
 
@@ -1246,7 +1248,7 @@ struct command : serialisable
 
         if(!sd.has_prop_string(result, "type"))
         {
-            sd.pop_n(1);
+            //sd.pop_n(1);
 
             return ret;
         }
@@ -1321,7 +1323,7 @@ struct command : serialisable
             ret.to_exec = command::DEFENDER_DISCARD_TO;
         }
 
-        sd.pop_n(6);
+        //sd.pop_n(6);
 
         return ret;
     }
@@ -1412,7 +1414,7 @@ struct command_manager : serialisable
         s.handle_serialise_no_clear(commands, ser);
     }
 
-    std::string exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state)
+    std::string exec_all(stack_duk& sd, arg_idx& gs_id, seamless_ui_state& ui_state)
     {
         std::string ret;
 
@@ -1452,7 +1454,7 @@ struct command_manager : serialisable
 };
 
 ///hmm. Maybe instead of networking state we should just network commands
-void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state)
+void do_ui(stack_duk& sd, arg_idx& gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state)
 {
     ///ATTACKER ACTIONS:
     ///Draw card from lane deck if not protected
@@ -1538,7 +1540,7 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
 ///replace all interactions with javascript interactions
 ///replace api between rendering functions and game state with js calls
 ///also remember to fix mainfunc
-void init_js_interop(stack_duk& sd)
+arg_idx init_js_interop(stack_duk& sd)
 {
     sd.ctx = js_interop_startup();
 
@@ -1546,12 +1548,14 @@ void init_js_interop(stack_duk& sd)
 
     register_function(sd, binmat_js, "mainfunc");
 
-    call_global_function(sd, "mainfunc");
+    arg_idx base = call_global_function(sd, "mainfunc");
 
     sd.save_function_call_point();
+
+    return base;
 }
 
-void do_seamless_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos, seamless_ui_state& ui_state)
+void do_seamless_ui(stack_duk& sd, arg_idx& gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, vec2f mpos, seamless_ui_state& ui_state)
 {
     if(ImGui::IsMouseClicked(1))
     {
@@ -1912,9 +1916,10 @@ int main(int argc, char* argv[])
     sf::Clock time;
 
     stack_duk sd;
-    init_js_interop(sd);
+    arg_idx base = init_js_interop(sd);
 
-    arg_idx bot_id(-1);
+    ///?
+    arg_idx bot_id(sd);
 
     if(is_bot)
     {
@@ -1926,15 +1931,15 @@ int main(int argc, char* argv[])
 
     arg_idx global_object = sd.push_global_object();
 
-    arg_idx gs_id = call_function_from_absolute(sd, "game_state_make");
-    arg_idx cm_id = call_function_from_absolute(sd, "card_manager_make");
+    arg_idx gs_id = call_function_from(sd, "game_state_make", base);
+    arg_idx cm_id = call_function_from(sd, "card_manager_make", base);
 
     printf("gs cm %i %i\n", gs_id.val, cm_id.val);
 
-    call_function_from_absolute(sd, "game_state_generate_new_game", gs_id, cm_id);
+    call_function_from(sd, "game_state_generate_new_game", base, gs_id, cm_id);
     ///does not return
     ///so we can get it off the stack
-    sd.pop_n(1);
+    //sd.pop_n(1);
 
     call_function_from_absolute(sd, "debug", gs_id);
 
@@ -1996,7 +2001,7 @@ int main(int argc, char* argv[])
 
             commands.add(c);
 
-            sd.pop_n(1);
+            //sd.pop_n(1);
         }
 
         double diff_s = time.restart().asMicroseconds() / 1000. / 1000.;
