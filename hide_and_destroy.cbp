@@ -4,13 +4,13 @@
 	<Project>
 		<Option title="hide_and_destroy" />
 		<Option pch_mode="2" />
-		<Option compiler="mingw64new" />
+		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
 				<Option output="bin/Debug/hide_and_destroy" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
-				<Option compiler="mingw64new" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -19,7 +19,7 @@
 				<Option output="bin/Release/hide_and_destroy" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Release/" />
 				<Option type="1" />
-				<Option compiler="mingw64new" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
 				</Compiler>
@@ -31,7 +31,7 @@
 				<Option output="bin/Profile/hide_and_destroy" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Profile/" />
 				<Option type="1" />
-				<Option compiler="mingw64new" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-pg" />
 					<Add option="-Og" />
@@ -67,7 +67,8 @@
 			<Add library="C:/Users/James/Desktop/projects/binmat_game/libduktape.so.202.20200" />
 		</Linker>
 		<ExtraCommands>
-			<Add after="post_build.bat" />
+			<Add before="./update_submodules.bat" />
+			<Add after="./post_build.bat" />
 			<Mode after="always" />
 		</ExtraCommands>
 		<Unit filename="binmat_sim.js" />
