@@ -717,6 +717,8 @@ function(context, args)
 			}
 		}
 
+		gs.turn = 0;
+
 		game_state_ensure_card_facing(gs);
 	}
 

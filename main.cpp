@@ -1095,6 +1095,9 @@ struct command : serialisable
     int is_faceup = false;
     int hand_card_offset = 0;
 
+
+    bool game_was_won = false;
+
     bool check_success(stack_duk& sd, arg_idx result)
     {
         bool success = true;
@@ -1116,6 +1119,8 @@ struct command : serialisable
         if(sd.has_prop_string(result, "win"))
         {
             printf("Someone Won\n");
+
+            game_was_won = true;
         }
 
         return success;
@@ -1412,7 +1417,7 @@ struct command_manager : serialisable
         s.handle_serialise_no_clear(commands, ser);
     }
 
-    std::string exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state)
+    std::string exec_all(stack_duk& sd, arg_idx gs_id, seamless_ui_state& ui_state, bool& game_was_won)
     {
         std::string ret;
 
@@ -1422,6 +1427,11 @@ struct command_manager : serialisable
         for(command& c : commands)
         {
             ret += c.execute(sd, gs_id);
+
+            if(c.game_was_won)
+            {
+                game_was_won = true;
+            }
         }
 
         commands.clear();
@@ -1452,7 +1462,7 @@ struct command_manager : serialisable
 };
 
 ///hmm. Maybe instead of networking state we should just network commands
-void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state)
+void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::player_t player, game_state& basic_state, bool game_won)
 {
     ///ATTACKER ACTIONS:
     ///Draw card from lane deck if not protected
@@ -1522,6 +1532,16 @@ void do_ui(stack_duk& sd, arg_idx gs_id, command_manager& commands, game_state::
     else
     {
         ImGui::TextColored("It is not your turn", {1.f, 0.4f, 0.4f});
+    }
+
+    if(game_won && basic_state.turn >= 110)
+    {
+        ImGui::Text("Defender Wins!");
+    }
+
+    if(game_won && basic_state.turn < 110)
+    {
+        ImGui::Text("Attacker Wins!");
     }
 
     ImGui::End();
@@ -1961,6 +1981,9 @@ int main(int argc, char* argv[])
     player_manager player_manage;
     player_manage.explicit_register_never_clear();
 
+    bool game_won = false;
+    bool should_restart = false;
+
     while(window.isOpen())
     {
         sf::Event event;
@@ -1984,11 +2007,11 @@ int main(int argc, char* argv[])
         sf::Mouse mouse;
         auto mpos = mouse.getPosition(window);
 
-        do_ui(sd, gs_id, commands, current_player, basic_state);
+        do_ui(sd, gs_id, commands, current_player, basic_state, game_won);
 
         do_seamless_ui(sd, gs_id, commands, current_player, basic_state, {mpos.x, mpos.y}, ui_state);
 
-        if(is_bot && basic_state.can_act(current_player, sd, gs_id))
+        if(is_bot && basic_state.can_act(current_player, sd, gs_id) && !game_won && player_manage.is_joined)
         {
             arg_idx mainfunc = call_function_from(sd, "mainfunc", global_object);
 
@@ -2004,21 +2027,6 @@ int main(int argc, char* argv[])
         player_manage.tick(diff_s, net_state);
         commands.network(net_state);
         net_state.tick_ping_master_for_gameservers();
-
-        std::string events = commands.exec_all(sd, gs_id, ui_state);
-
-        if(events.size() != 0)
-        {
-            last_events = events;
-        }
-
-        basic_state.import_state_from_js(sd, gs_id);
-
-        ImGui::Begin("Last Combat Log", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-        ImGui::Text(last_events.c_str());
-
-        ImGui::End();
 
         ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -2148,6 +2156,7 @@ int main(int argc, char* argv[])
                     player_manage.reset_new_players();
                     player_manage.can_host = false;
                     player_manage.is_joined = true;
+                    game_won = false;
                 }
 
                 i.set_complete();
@@ -2156,14 +2165,26 @@ int main(int argc, char* argv[])
             }
         }
 
-        basic_state.import_state_from_js(sd, gs_id);
-
-        events = commands.exec_all(sd, gs_id, ui_state);
+        std::string events = commands.exec_all(sd, gs_id, ui_state, game_won);
 
         if(events.size() != 0)
         {
             last_events = events;
         }
+
+        basic_state.import_state_from_js(sd, gs_id);
+
+        if(basic_state.turn >= 110)
+        {
+            game_won = true;
+        }
+
+        ImGui::Begin("Last Combat Log", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Text(last_events.c_str());
+
+        ImGui::End();
+
 
         basic_state.render(window, basic_state.viewer);
 
@@ -2200,6 +2221,7 @@ int main(int argc, char* argv[])
             tooltip::add(i);
         }
 
+
         ImGui::Begin("Networking", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::Text(("Others Connected: " + std::to_string(player_manage.connected_count())).c_str());
@@ -2217,7 +2239,7 @@ int main(int argc, char* argv[])
             ImGui::Text("Joined Server");
         }
 
-        if(player_manage.has_new_players())
+        if(player_manage.has_new_players() || should_restart)
         {
             ImGui::Text("New Players Detected");
 
@@ -2247,12 +2269,25 @@ int main(int argc, char* argv[])
 
                 player_manage.reset_new_players();
                 player_manage.is_joined = true;
+                should_restart = false;
+                game_won = false;
             }
         }
 
         if(!net_state.connected())
         {
             ImGui::Text("No connection to server");
+        }
+
+        if(player_manage.is_host && game_won)
+        {
+            if(ImGui::Button("Restart Game"))
+            {
+                call_function_from_absolute(sd, "game_state_generate_new_game", gs_id, cm_id);
+                sd.pop_n(1);
+
+                should_restart = true;
+            }
         }
 
         ImGui::End();
