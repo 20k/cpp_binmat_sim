@@ -937,11 +937,23 @@ function(context, args)
         if(card_is_type(to_play, value_t["BREAK"]) && (card_list_contains(appropriate_stack, value_t["BREAK"]) || appropriate_stack.cards.length == 0))
 			return false;
 
-		if(card_is_type(to_play, value_t["BOUNCE"]) && player == player_t["ATTACKER"] && appropriate_stack.cards.length == 0)
-			return true;
+        if(player == player_t["ATTACKER"])
+        {
+            if(card_is_type(to_play, value_t["BOUNCE"]) && appropriate_stack.cards.length == 0)
+                return true;
 
-		if(card_is_type(to_play, value_t["BOUNCE"]) && (player != player_t["ATTACKER"] || appropriate_stack.cards.length > 0))
-			return false;
+            if(card_is_type(to_play, value_t["BOUNCE"]) && appropriate_stack.cards.length > 0)
+                return false;
+        }
+        if(player == player_t["DEFENDER"])
+        {
+            ///card_list being faceup has to have 1+ cards
+            if(card_is_type(to_play, value_t["BOUNCE"]) && card_list_is_face_up(appropriate_stack))
+                return true;
+
+            if(card_is_type(to_play, value_t["BOUNCE"]) && !card_list_is_face_up(appropriate_stack))
+                return false;
+        }
 
         if(card_list_is_face_up(appropriate_stack))
             return true;
@@ -1416,6 +1428,7 @@ function(context, args)
 			card_list_calculate_stack_damage:card_list_calculate_stack_damage,
 			card_list_prune_to_face_down:card_list_prune_to_face_down,
 			card_list_clone:card_list_clone,
+			card_list_accepts_face_down_cards:card_list_accepts_face_down_cards,
 
 			piles_is_lane_type:piles_is_lane_type,
 			piles:piles,
