@@ -40,6 +40,18 @@
 					<Add option="-pg -lgmon" />
 				</Linker>
 			</Target>
+			<Target title="ARM-Release">
+				<Option output="bin/ARM-Release/hide_and_destroy" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/ARM-Release/" />
+				<Option type="1" />
+				<Option compiler="gcc-eabi" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
@@ -67,8 +79,8 @@
 			<Add library="C:/Users/James/Desktop/projects/binmat_game/libduktape.so.202.20200" />
 		</Linker>
 		<ExtraCommands>
-			<Add before="./update_submodules.bat" />
-			<Add after="./post_build.bat" />
+			<Add before="update_submodules.bat" />
+			<Add after="post_build.bat" />
 			<Mode after="always" />
 		</ExtraCommands>
 		<Unit filename="binmat_sim.js" />
