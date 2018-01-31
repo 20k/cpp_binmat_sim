@@ -1903,6 +1903,29 @@ int main(int argc, char* argv[])
     net_state.reliable_ordered.init_client();
     net_state.try_join = true;
 
+
+    std::string ip_port = std::string("77.96.132.101") + ":" + GAMESERVER_PORT;
+
+    if(file_exists("ipconfig.txt"))
+    {
+        ip_port = read_file("ipconfig.txt");
+    }
+
+    std::vector<std::string> strs = split(ip_port, ':');
+
+    for(auto& i : strs)
+    {
+        i = strip_whitespace(i);
+    }
+
+    if(strs.size() >= 2)
+    {
+        net_state.try_join_ip = strs[0];
+        net_state.try_join_port = strs[1];
+    }
+
+    std::cout << "Configured to join " << net_state.try_join_ip << ":" << net_state.try_join_port << std::endl;
+
     net_state.open_socket_to_master_server(MASTER_IP, MASTER_CLIENT_PORT);
 
     update_strategy card_updater;
