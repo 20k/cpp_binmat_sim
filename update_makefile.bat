@@ -1,0 +1,1 @@
+cbp2make -in hide_and_destroy.cbp -out makefile -unix
