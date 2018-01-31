@@ -76,6 +76,7 @@ clean: clean_debug clean_release clean_profile clean_arm_release clean_arm_nativ
 
 before_build: 
 	update_submodules.bat
+	update_makefile.bat
 
 after_build: 
 	post_build.bat

@@ -3,6 +3,7 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="hide_and_destroy" />
+		<Option makefile="makefile" />
 		<Option pch_mode="2" />
 		<Option default_target="Release" />
 		<Option compiler="gcc" />
@@ -95,6 +96,7 @@
 		</Linker>
 		<ExtraCommands>
 			<Add before="update_submodules.bat" />
+			<Add before="update_makefile.bat" />
 			<Add after="post_build.bat" />
 			<Mode after="always" />
 		</ExtraCommands>
