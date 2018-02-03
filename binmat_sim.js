@@ -1141,9 +1141,18 @@ function(context, args)
 
 		if(modify_combat_rules)
 		{
+            events += "Using BREAK damage rules\n";
+
 			damage = attacker_damage;
 
-			events += "Using BREAK damage rules\n";
+            var defender_stack_size = defender_stack.cards.length;
+
+            if(defender_stack_size > damage)
+            {
+                events += "Defender Stack size > Attacker Stack damage\n";
+            }
+
+            damage = Math.max(damage, defender_stack_size);
 		}
 
 		events += "Resolved Damage: " + damage + "\n";

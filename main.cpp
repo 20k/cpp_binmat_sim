@@ -1118,9 +1118,18 @@ struct command : serialisable
 
         if(sd.has_prop_string(result, "win"))
         {
-            printf("Someone Won\n");
+            arg_idx win_id = sd.get_prop_string(result, "win");
 
-            game_was_won = true;
+            bool was_won = sd.get_boolean(win_id);
+
+            if(was_won)
+            {
+                printf("Someone Won\n");
+
+                game_was_won = true;
+            }
+
+            sd.pop_n(1);
         }
 
         return success;
