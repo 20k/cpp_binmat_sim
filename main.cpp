@@ -1850,6 +1850,19 @@ struct player_manager : serialisable
         return net_info.role == player;
     }
 
+    int num_of_role(game_state::player_t player)
+    {
+        int num = 0;
+
+        for(auto& i : found_ids)
+        {
+            if(i.second.net_info.role == player)
+                num++;
+        }
+
+        return num;
+    }
+
 
     bool has_new_players()
     {

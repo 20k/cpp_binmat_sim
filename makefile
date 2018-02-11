@@ -62,6 +62,17 @@ OBJDIR_ARM_NATIVE = obj/Release
 DEP_ARM_NATIVE = 
 OUT_ARM_NATIVE = bin/Release/hide_and_destroy
 
+INC_UPDATE_DEPS = $(INC)
+CFLAGS_UPDATE_DEPS = $(CFLAGS) -O2
+RESINC_UPDATE_DEPS = $(RESINC)
+RCFLAGS_UPDATE_DEPS = $(RCFLAGS)
+LIBDIR_UPDATE_DEPS = $(LIBDIR)
+LIB_UPDATE_DEPS = $(LIB)
+LDFLAGS_UPDATE_DEPS = $(LDFLAGS) -s
+OBJDIR_UPDATE_DEPS = obj/Release
+DEP_UPDATE_DEPS = 
+OUT_UPDATE_DEPS = bin/Release/hide_and_destroy
+
 OBJ_DEBUG = $(OBJDIR_DEBUG)/deps/4space_server/networking.o $(OBJDIR_DEBUG)/deps/serialise/serialise.o $(OBJDIR_DEBUG)/main.o
 
 OBJ_RELEASE = $(OBJDIR_RELEASE)/deps/4space_server/networking.o $(OBJDIR_RELEASE)/deps/serialise/serialise.o $(OBJDIR_RELEASE)/main.o
@@ -70,12 +81,13 @@ OBJ_PROFILE = $(OBJDIR_PROFILE)/deps/4space_server/networking.o $(OBJDIR_PROFILE
 
 OBJ_ARM_NATIVE = $(OBJDIR_ARM_NATIVE)/deps/4space_server/networking.o $(OBJDIR_ARM_NATIVE)/deps/serialise/serialise.o $(OBJDIR_ARM_NATIVE)/main.o
 
-all: before_build build_debug build_release build_profile build_arm_release build_arm_native after_build
+OBJ_UPDATE_DEPS = $(OBJDIR_UPDATE_DEPS)/deps/4space_server/networking.o $(OBJDIR_UPDATE_DEPS)/deps/serialise/serialise.o $(OBJDIR_UPDATE_DEPS)/main.o
 
-clean: clean_debug clean_release clean_profile clean_arm_release clean_arm_native
+all: before_build build_debug build_release build_profile build_arm_release build_arm_native build_update_deps after_build
+
+clean: clean_debug clean_release clean_profile clean_arm_release clean_arm_native clean_update_deps
 
 before_build: 
-	update_submodules.bat
 	update_makefile.bat
 
 after_build: 
@@ -175,6 +187,7 @@ clean_profile:
 	rm -rf $(OBJDIR_PROFILE)
 
 before_arm_native: 
+	update_submodules.bat
 	test -d bin/Release || mkdir -p bin/Release
 	test -d $(OBJDIR_ARM_NATIVE)/deps/4space_server || mkdir -p $(OBJDIR_ARM_NATIVE)/deps/4space_server
 	test -d $(OBJDIR_ARM_NATIVE)/deps/serialise || mkdir -p $(OBJDIR_ARM_NATIVE)/deps/serialise
@@ -205,5 +218,37 @@ clean_arm_native:
 	rm -rf $(OBJDIR_ARM_NATIVE)/deps/serialise
 	rm -rf $(OBJDIR_ARM_NATIVE)
 
-.PHONY: before_build after_build before_debug after_debug clean_debug before_release after_release clean_release before_profile after_profile clean_profile before_arm_native after_arm_native clean_arm_native
+before_update_deps: 
+	update_submodules.bat
+	test -d bin/Release || mkdir -p bin/Release
+	test -d $(OBJDIR_UPDATE_DEPS)/deps/4space_server || mkdir -p $(OBJDIR_UPDATE_DEPS)/deps/4space_server
+	test -d $(OBJDIR_UPDATE_DEPS)/deps/serialise || mkdir -p $(OBJDIR_UPDATE_DEPS)/deps/serialise
+	test -d $(OBJDIR_UPDATE_DEPS) || mkdir -p $(OBJDIR_UPDATE_DEPS)
+
+after_update_deps: 
+
+build_update_deps: before_update_deps out_update_deps after_update_deps
+
+update_deps: before_build build_update_deps after_build
+
+out_update_deps: before_update_deps $(OBJ_UPDATE_DEPS) $(DEP_UPDATE_DEPS)
+	$(LD) $(LIBDIR_UPDATE_DEPS) -o $(OUT_UPDATE_DEPS) $(OBJ_UPDATE_DEPS)  $(LDFLAGS_UPDATE_DEPS) $(LIB_UPDATE_DEPS)
+
+$(OBJDIR_UPDATE_DEPS)/deps/4space_server/networking.o: deps/4space_server/networking.cpp
+	$(CXX) $(CFLAGS_UPDATE_DEPS) $(INC_UPDATE_DEPS) -c deps/4space_server/networking.cpp -o $(OBJDIR_UPDATE_DEPS)/deps/4space_server/networking.o
+
+$(OBJDIR_UPDATE_DEPS)/deps/serialise/serialise.o: deps/serialise/serialise.cpp
+	$(CXX) $(CFLAGS_UPDATE_DEPS) $(INC_UPDATE_DEPS) -c deps/serialise/serialise.cpp -o $(OBJDIR_UPDATE_DEPS)/deps/serialise/serialise.o
+
+$(OBJDIR_UPDATE_DEPS)/main.o: main.cpp
+	$(CXX) $(CFLAGS_UPDATE_DEPS) $(INC_UPDATE_DEPS) -c main.cpp -o $(OBJDIR_UPDATE_DEPS)/main.o
+
+clean_update_deps: 
+	rm -f $(OBJ_UPDATE_DEPS) $(OUT_UPDATE_DEPS)
+	rm -rf bin/Release
+	rm -rf $(OBJDIR_UPDATE_DEPS)/deps/4space_server
+	rm -rf $(OBJDIR_UPDATE_DEPS)/deps/serialise
+	rm -rf $(OBJDIR_UPDATE_DEPS)
+
+.PHONY: before_build after_build before_debug after_debug clean_debug before_release after_release clean_release before_profile after_profile clean_profile before_arm_native after_arm_native clean_arm_native before_update_deps after_update_deps clean_update_deps
 
