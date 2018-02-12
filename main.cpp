@@ -1571,7 +1571,7 @@ void init_js_interop(stack_duk& sd)
 {
     sd.ctx = js_interop_startup();
 
-    std::string binmat_js = read_file("binmat_sim.js");
+    std::string binmat_js = read_file_b("binmat_sim.js");
 
     register_function(sd, binmat_js, "mainfunc");
 
@@ -1983,7 +1983,7 @@ int main(int argc, char* argv[])
 
     if(is_bot)
     {
-        std::string jsfile = read_file(bot_js);
+        std::string jsfile = read_file_b(bot_js);
 
         register_function(sd, jsfile, "botjs");
         bot_id = call_global_function(sd, "botjs");
