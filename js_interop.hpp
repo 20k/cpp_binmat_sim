@@ -2,6 +2,7 @@
 #define JS_INTEROP_HPP_INCLUDED
 
 #include "duktape.h"
+#include <sstream>
 
 static duk_ret_t native_print(duk_context *ctx) {
 	duk_push_string(ctx, " ");
@@ -18,7 +19,7 @@ static duk_ret_t native_sleep(duk_context* ctx)
     return 0;
 }
 
-std::string read_file(const std::string& file)
+std::string read_file_b(const std::string& file)
 {
     FILE *f = fopen(file.c_str(), "rb");
     fseek(f, 0, SEEK_END);
@@ -29,6 +30,18 @@ std::string read_file(const std::string& file)
     buffer.resize(fsize + 1);
     fread(&buffer[0], fsize, 1, f);
     fclose(f);
+
+    return buffer;
+}
+
+std::string read_file(const std::string& file)
+{
+    std::ifstream t(file);
+    t.seekg(0, std::ios::end);
+    size_t size = t.tellg();
+    std::string buffer(size, ' ');
+    t.seekg(0);
+    t.read(&buffer[0], size);
 
     return buffer;
 }
@@ -184,7 +197,12 @@ struct stack_duk
 
     void call(int args)
     {
-        duk_call(ctx, args);
+        int ret = duk_pcall(ctx, args);
+
+        if(ret != DUK_EXEC_SUCCESS)
+        {
+            printf("error in sdcall: %s\n", duk_safe_to_string(ctx, -1));
+        }
     }
 
     int get_int(arg_idx offset)
