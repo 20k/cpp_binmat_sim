@@ -1921,7 +1921,7 @@ int main(int argc, char* argv[])
     }
 
     networking_init();
-    network_state net_state;
+    network_state net_state(BINMAT_SIM_GAME_ID);
     net_state.reliable_ordered.init_client();
     net_state.try_join = true;
 
