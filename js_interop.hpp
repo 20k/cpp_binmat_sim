@@ -54,8 +54,8 @@ void native_register(duk_context *ctx) {
 	duk_put_global_string(ctx, "sleep");
 }
 
-template<typename T>
-void inject_c_function(duk_context *ctx, T& t, const std::string& str, int nargs)
+template<typename T, typename U>
+void inject_c_function(duk_context *ctx, T& t, const std::string& str, U nargs)
 {
     duk_push_c_function(ctx, &t, nargs);
 	duk_put_global_string(ctx, str.c_str());
