@@ -53,13 +53,19 @@ std::string read_file_r(const std::string& file)
 std::string read_file(const std::string& file)
 {
     std::ifstream t(file);
+    std::string str((std::istreambuf_iterator<char>(t)),
+                     std::istreambuf_iterator<char>());
+
+    return str;
+
+    /*std::ifstream t(file);
     t.seekg(0, std::ios::end);
     int size = t.tellg();
     std::string buffer(size, '\0');
     t.seekg(0);
     t.read(&buffer[0], size);
 
-    return buffer;
+    return buffer;*/
 
     /*FILE *f = fopen(file.c_str(), "r");
     fseek(f, 0, SEEK_END);
