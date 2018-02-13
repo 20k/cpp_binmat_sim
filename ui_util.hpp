@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#if 0
 namespace ImGui
 {
     inline
@@ -13,6 +14,7 @@ namespace ImGui
         TextColored(ImVec4(col.x(), col.y(), col.z(), 1), str.c_str());
     }
 }
+#endif
 
 inline bool file_exists (const std::string& name)
 {
@@ -39,6 +41,7 @@ std::vector<std::string> split(const std::string &s, char delim)
     return elems;
 }
 
+inline
 std::string strip_whitespace(std::string in)
 {
     if(in.size() == 0)

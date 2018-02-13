@@ -3,6 +3,7 @@
 
 #include "duktape.h"
 #include <sstream>
+#include <fstream>
 
 static duk_ret_t native_print(duk_context *ctx) {
 	duk_push_string(ctx, " ");
@@ -14,7 +15,7 @@ static duk_ret_t native_print(duk_context *ctx) {
 
 static duk_ret_t native_sleep(duk_context* ctx)
 {
-    Sleep(1);
+    //Sleep(1);
 
     return 0;
 }
@@ -34,16 +35,43 @@ std::string read_file_b(const std::string& file)
     return buffer;
 }
 
+std::string read_file_r(const std::string& file)
+{
+    FILE *f = fopen(file.c_str(), "r");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);  //same as rewind(f);
+
+    std::string buffer;
+    buffer.resize(fsize + 1);
+    fread(&buffer[0], fsize, 1, f);
+    fclose(f);
+
+    return buffer;
+}
+
 std::string read_file(const std::string& file)
 {
     std::ifstream t(file);
     t.seekg(0, std::ios::end);
-    size_t size = t.tellg();
-    std::string buffer(size, ' ');
+    int size = t.tellg();
+    std::string buffer(size, '\0');
     t.seekg(0);
     t.read(&buffer[0], size);
 
     return buffer;
+
+    /*FILE *f = fopen(file.c_str(), "r");
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);  //same as rewind(f);
+
+    std::string buffer;
+    buffer.resize(fsize);
+    fread(&buffer[0], fsize, 1, f);
+    fclose(f);
+
+    return buffer;*/
 }
 
 void native_register(duk_context *ctx) {
