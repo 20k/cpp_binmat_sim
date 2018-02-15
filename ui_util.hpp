@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <ctype.h>
+#include <fstream>
 
 #if 0
 namespace ImGui

@@ -2,6 +2,7 @@
 #define JS_INTEROP_HPP_INCLUDED
 
 #include "duktape.h"
+#include <iostream>
 #include <sstream>
 #include <fstream>
 
@@ -20,6 +21,7 @@ static duk_ret_t native_sleep(duk_context* ctx)
     return 0;
 }
 
+inline
 std::string read_file_b(const std::string& file)
 {
     FILE *f = fopen(file.c_str(), "rb");
@@ -35,6 +37,7 @@ std::string read_file_b(const std::string& file)
     return buffer;
 }
 
+inline
 std::string read_file_r(const std::string& file)
 {
     FILE *f = fopen(file.c_str(), "r");
@@ -50,6 +53,7 @@ std::string read_file_r(const std::string& file)
     return buffer;
 }
 
+inline
 std::string read_file(const std::string& file)
 {
     std::ifstream t(file);
@@ -80,6 +84,7 @@ std::string read_file(const std::string& file)
     return buffer;*/
 }
 
+inline
 void native_register(duk_context *ctx) {
 	duk_push_c_function(ctx, native_print, DUK_VARARGS);
 	duk_put_global_string(ctx, "print");
@@ -89,12 +94,14 @@ void native_register(duk_context *ctx) {
 }
 
 template<typename T, typename U>
+inline
 void inject_c_function(duk_context *ctx, T& t, const std::string& str, U nargs)
 {
     duk_push_c_function(ctx, &t, nargs);
 	duk_put_global_string(ctx, str.c_str());
 }
 
+inline
 void debug_stack(duk_context* ctx)
 {
     duk_push_context_dump(ctx);
@@ -279,6 +286,7 @@ struct stack_duk
     }
 };
 
+inline
 arg_idx call_global_function(stack_duk& sd, const std::string& name)
 {
     //sd.save();
@@ -301,6 +309,7 @@ arg_idx call_global_function(stack_duk& sd, const std::string& name)
     return arg_idx(sd.stack_val-1);
 }
 
+inline
 arg_idx call_implicit_function(stack_duk& sd, const std::string& name)
 {
     //duk_get_prop_string(ctx, -1, name.c_str());
@@ -316,45 +325,53 @@ arg_idx call_implicit_function(stack_duk& sd, const std::string& name)
     return arg_idx(sd.stack_val-1);
 }
 
+inline
 void push_arg(stack_duk& sd, const std::string& s)
 {
     sd.push_string(s);
 }
 
+inline
 void push_arg(stack_duk& sd, int s)
 {
     sd.push_int(s);
 }
 
+inline
 void push_arg(stack_duk& sd, bool s)
 {
     sd.push_boolean(s);
 }
 
+inline
 void push_arg(stack_duk& sd, arg_idx s)
 {
     sd.dup_absolute(s.val);
 }
 
 template<typename T, typename... U>
+inline
 void set_arg(stack_duk& sd, T t, U... u)
 {
     push_arg(sd, std::forward<T>(t));
     set_arg(sd, std::forward<U>(u)...);
 }
 
+inline
 void set_arg(stack_duk& sd)
 {
 
 }
 
 template<typename... T>
+inline
 void set_args(stack_duk& sd, T... t)
 {
     set_arg(sd, std::forward<T>(t)...);
 }
 
 template<typename... T>
+inline
 arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T... arg_offsets)
 {
     sd.save();
@@ -379,6 +396,7 @@ arg_idx call_function_from_absolute(stack_duk& sd, const std::string& name, T...
 }
 
 template<typename... T>
+inline
 arg_idx call_function_from(stack_duk& sd, const std::string& name, arg_idx from, T... arg_offsets)
 {
     sd.save();
@@ -403,6 +421,7 @@ arg_idx call_function_from(stack_duk& sd, const std::string& name, arg_idx from,
     return arg_idx(sd.stack_val - 1);
 }
 
+inline
 void register_function(stack_duk& sd, const std::string& function_str, const std::string& function_name)
 {
     std::string test_js = "var global = new Function(\'return this;\')();\n"
@@ -420,6 +439,7 @@ void register_function(stack_duk& sd, const std::string& function_str, const std
     }
 }
 
+inline
 duk_context* js_interop_startup()
 {
     duk_context *ctx = duk_create_heap_default();
