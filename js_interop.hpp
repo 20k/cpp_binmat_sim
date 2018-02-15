@@ -449,4 +449,10 @@ duk_context* js_interop_startup()
     return ctx;
 }
 
+inline
+void js_interop_shutdown(duk_context* ctx)
+{
+    duk_destroy_heap(ctx);
+}
+
 #endif // JS_INTEROP_HPP_INCLUDED
