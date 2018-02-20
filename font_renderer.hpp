@@ -25,7 +25,7 @@ void render_font(sf::RenderWindow& win, const std::string& to_render, vec2f pos,
 
     col = col * 255;
 
-    txt.setColor(sf::Color(col.x(), col.y(), col.z(), col.w()));
+    txt.setFillColor(sf::Color(col.x(), col.y(), col.z(), col.w()));
 
     txt.setOrigin(round(txt.getLocalBounds().width/2.f), 0.f);
 
