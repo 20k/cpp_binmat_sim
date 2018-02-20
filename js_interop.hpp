@@ -53,6 +53,7 @@ std::string read_file_r(const std::string& file)
     return buffer;
 }
 
+#if 0
 inline
 std::string read_file(const std::string& file)
 {
@@ -62,6 +63,7 @@ std::string read_file(const std::string& file)
 
     return str;
 }
+#endif // 0
 
 inline
 void native_register(duk_context *ctx) {
