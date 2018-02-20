@@ -61,27 +61,6 @@ std::string read_file(const std::string& file)
                      std::istreambuf_iterator<char>());
 
     return str;
-
-    /*std::ifstream t(file);
-    t.seekg(0, std::ios::end);
-    int size = t.tellg();
-    std::string buffer(size, '\0');
-    t.seekg(0);
-    t.read(&buffer[0], size);
-
-    return buffer;*/
-
-    /*FILE *f = fopen(file.c_str(), "r");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);  //same as rewind(f);
-
-    std::string buffer;
-    buffer.resize(fsize);
-    fread(&buffer[0], fsize, 1, f);
-    fclose(f);
-
-    return buffer;*/
 }
 
 inline
