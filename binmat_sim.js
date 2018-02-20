@@ -1135,7 +1135,7 @@ function(context, args)
 			return {ok:true, events:events};
 		}
 
-		var modify_combat_rules = card_list_get_of_type(attacker_stack, value_t["BREAK"]).cards.length > 0;
+		var modify_combat_rules = (card_list_get_of_type(attacker_stack, value_t["BREAK"]).cards.length > 0) || (card_list_get_of_type(defender_stack, value_t["BREAK"]).cards.length > 0);
 
 		var damage = (attacker_damage - defender_damage) + 1;
 
