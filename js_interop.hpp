@@ -67,11 +67,11 @@ std::string read_file(const std::string& file)
 
 inline
 void native_register(duk_context *ctx) {
-	duk_push_c_function(ctx, native_print, DUK_VARARGS);
+	/*duk_push_c_function(ctx, native_print, DUK_VARARGS);
 	duk_put_global_string(ctx, "print");
 
 	duk_push_c_function(ctx, native_sleep, 0);
-	duk_put_global_string(ctx, "sleep");
+	duk_put_global_string(ctx, "sleep");*/
 }
 
 template<typename T, typename U>
