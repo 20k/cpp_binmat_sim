@@ -6,6 +6,7 @@
 #include <sstream>
 #include <fstream>
 
+#if 0
 static duk_ret_t native_print(duk_context *ctx) {
 	duk_push_string(ctx, " ");
 	duk_insert(ctx, 0);
@@ -20,6 +21,7 @@ static duk_ret_t native_sleep(duk_context* ctx)
 
     return 0;
 }
+#endif // 0
 
 inline
 std::string read_file_b(const std::string& file)
